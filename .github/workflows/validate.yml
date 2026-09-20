@@ -68,6 +68,7 @@ jobs:
         run: |
           set -eux
           test -f "$HOME/.local/share/godot/export_templates/4.5.2.stable/android_debug.apk"
+          : > export_presets.cfg
           printf '%s\n' >> export_presets.cfg '[preset.0]'
           printf '%s\n' >> export_presets.cfg ''
           printf '%s\n' >> export_presets.cfg 'name="Android"'
