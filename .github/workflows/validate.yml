@@ -73,7 +73,7 @@ jobs:
           printf '%s\n' >> export_presets.cfg ''
           printf '%s\n' >> export_presets.cfg 'name="Android"'
           printf '%s\n' >> export_presets.cfg 'platform="Android"'
-          printf '%s\n' >> export_presets.cfg 'runnable=true'
+          printf '%s\n' >> export_presets.cfg 'runnable=false'
           printf '%s\n' >> export_presets.cfg 'dedicated_server=false'
           printf '%s\n' >> export_presets.cfg 'custom_features=""'
           printf '%s\n' >> export_presets.cfg 'export_filter="all_resources"'
