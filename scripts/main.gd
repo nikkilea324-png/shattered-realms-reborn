@@ -34,22 +34,22 @@ func _build_ravenwood() -> void:
 
             var mesh_instance := MeshInstance3D.new()
             var mesh := CylinderMesh.new()
-            mesh.top_radius = HEX_SIZE * 0.55
-            mesh.bottom_radius = HEX_SIZE * 0.55
-            mesh.height = HEX_HEIGHT + tile.position.y
+            mesh.top_radius = HEX_SIZE
+            mesh.bottom_radius = HEX_SIZE
+            mesh.height = HEX_HEIGHT
             mesh.radial_segments = 6
             mesh.rings = 1
             mesh_instance.mesh = mesh
-            mesh_instance.position.y = -tile.position.y * 0.5
+            mesh_instance.position.y = -HEX_HEIGHT * 0.5
             mesh_instance.material_override = _terrain_material(coord)
             tile.add_child(mesh_instance)
 
             var collision := CollisionShape3D.new()
             var shape := CylinderShape3D.new()
-            shape.radius = HEX_SIZE * 0.55
-            shape.height = max(HEX_HEIGHT + tile.position.y, HEX_HEIGHT)
+            shape.radius = HEX_SIZE
+            shape.height = HEX_HEIGHT
             collision.shape = shape
-            collision.position.y = -tile.position.y * 0.5
+            collision.position.y = -HEX_HEIGHT * 0.5
             tile.add_child(collision)
 
             add_child(tile)
@@ -116,8 +116,8 @@ func _build_selection() -> void:
     selection_ring = MeshInstance3D.new()
     selection_ring.name = "SelectedHex"
     var ring := CylinderMesh.new()
-    ring.top_radius = 0.60
-    ring.bottom_radius = 0.60
+    ring.top_radius = 0.92
+    ring.bottom_radius = 0.92
     ring.height = 0.035
     ring.radial_segments = 6
     selection_ring.mesh = ring
