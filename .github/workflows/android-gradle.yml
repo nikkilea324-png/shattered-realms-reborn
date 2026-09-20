@@ -1,0 +1,33 @@
+name: Android Gradle Build
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  android-gradle:
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.5.2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify Godot version
+        run: godot --version
+
+      - name: Import project
+        run: godot --headless --editor --quit --path .
+
+      - name: Export Android debug build
+        run: |
+          mkdir -p build/android
+          godot --headless --path . --export-debug "Android" build/android/ShatteredRealms.apk
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: shattered-realms-android-debug
+          path: build/android/ShatteredRealms.apk
+          if-no-files-found: error
