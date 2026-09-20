@@ -71,6 +71,11 @@ EOF
       - name: Import project
         run: godot --headless --editor --quit --path .
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6.3.0
+        with:
+          cache-provider: basic
+
       - name: Install project Gradle build template
         run: godot --headless --path . --install-android-build-template
 
