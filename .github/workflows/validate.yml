@@ -63,18 +63,14 @@ jobs:
       - name: Import project
         run: godot --headless --editor --quit --path .
 
-      - name: Install Gradle build template
-        run: godot --headless --path . --install-android-build-template
-
-      - name: Verify generated Gradle project
+      - name: Prepare prebuilt Android debug template
         shell: bash
         run: |
           set -eux
-          test -f android/build/gradlew
-          test -f android/build/build.gradle
-          chmod +x android/build/gradlew
-          cd android/build
-          ./gradlew --version
+          cp "$HOME/.local/share/godot/export_templates/4.5.2.stable/android_debug.apk" ci_android_debug.apk
+          sed -i 's|custom_template/debug=""|custom_template/debug="res://ci_android_debug.apk"|' export_presets.cfg
+          sed -i 's|gradle_build/use_gradle_build=true|gradle_build/use_gradle_build=false|' export_presets.cfg
+          grep -E 'custom_template/debug|gradle_build/use_gradle_build' export_presets.cfg
 
       - name: Export Android debug APK
         shell: bash
