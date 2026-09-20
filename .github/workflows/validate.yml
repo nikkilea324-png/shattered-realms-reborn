@@ -68,60 +68,59 @@ jobs:
         run: |
           set -eux
           test -f "$HOME/.local/share/godot/export_templates/4.5.2.stable/android_debug.apk"
-          cat > export_presets.cfg <<'PRESET'
-[preset.0]
-
-name="Android"
-platform="Android"
-runnable=true
-dedicated_server=false
-custom_features=""
-export_filter="all_resources"
-include_filter=""
-exclude_filter=""
-export_path="build/android/ShatteredRealms.apk"
-encryption_include_filters=""
-encryption_exclude_filters=""
-encrypt_pck=false
-encrypt_directory=false
-
-[preset.0.options]
-
-custom_template/debug=""
-custom_template/release=""
-gradle_build/use_gradle_build=false
-gradle_build/export_format=0
-gradle_build/min_sdk=""
-gradle_build/target_sdk=""
-architectures/armeabi-v7a=false
-architectures/arm64-v8a=true
-architectures/x86=false
-architectures/x86_64=false
-version/code=1
-version/name="0.1.0"
-package/unique_name="com.shatteredrealms.game"
-package/name="Shattered Realms"
-package/signed=true
-package/app_category=2
-package/retain_data_on_uninstall=false
-package/exclude_from_recents=false
-package/show_in_android_tv=false
-package/show_in_app_library=true
-package/show_as_launcher_app=false
-graphics/opengl_debug=false
-xr_features/xr_mode=0
-screen/immersive_mode=true
-screen/support_small=true
-screen/support_normal=true
-screen/support_large=true
-screen/support_xlarge=true
-user_data_backup/allow=false
-command_line/extra_args=""
-apk_expansion/enable=false
-apk_expansion/SALT=""
-apk_expansion/public_key=""
-permissions/custom_permissions=PackedStringArray()
-PRESET
+          printf '%s\n' '[preset.0]'
+          printf '%s\n' ''
+          printf '%s\n' 'name="Android"'
+          printf '%s\n' 'platform="Android"'
+          printf '%s\n' 'runnable=true'
+          printf '%s\n' 'dedicated_server=false'
+          printf '%s\n' 'custom_features=""'
+          printf '%s\n' 'export_filter="all_resources"'
+          printf '%s\n' 'include_filter=""'
+          printf '%s\n' 'exclude_filter=""'
+          printf '%s\n' 'export_path="build/android/ShatteredRealms.apk"'
+          printf '%s\n' 'encryption_include_filters=""'
+          printf '%s\n' 'encryption_exclude_filters=""'
+          printf '%s\n' 'encrypt_pck=false'
+          printf '%s\n' 'encrypt_directory=false'
+          printf '%s\n' ''
+          printf '%s\n' '[preset.0.options]'
+          printf '%s\n' ''
+          printf '%s\n' 'custom_template/debug=""'
+          printf '%s\n' 'custom_template/release=""'
+          printf '%s\n' 'gradle_build/use_gradle_build=false'
+          printf '%s\n' 'gradle_build/export_format=0'
+          printf '%s\n' 'gradle_build/min_sdk=""'
+          printf '%s\n' 'gradle_build/target_sdk=""'
+          printf '%s\n' 'architectures/armeabi-v7a=false'
+          printf '%s\n' 'architectures/arm64-v8a=true'
+          printf '%s\n' 'architectures/x86=false'
+          printf '%s\n' 'architectures/x86_64=false'
+          printf '%s\n' 'version/code=1'
+          printf '%s\n' 'version/name="0.1.0"'
+          printf '%s\n' 'package/unique_name="com.shatteredrealms.game"'
+          printf '%s\n' 'package/name="Shattered Realms"'
+          printf '%s\n' 'package/signed=true'
+          printf '%s\n' 'package/app_category=2'
+          printf '%s\n' 'package/retain_data_on_uninstall=false'
+          printf '%s\n' 'package/exclude_from_recents=false'
+          printf '%s\n' 'package/show_in_android_tv=false'
+          printf '%s\n' 'package/show_in_app_library=true'
+          printf '%s\n' 'package/show_as_launcher_app=false'
+          printf '%s\n' 'graphics/opengl_debug=false'
+          printf '%s\n' 'xr_features/xr_mode=0'
+          printf '%s\n' 'screen/immersive_mode=true'
+          printf '%s\n' 'screen/support_small=true'
+          printf '%s\n' 'screen/support_normal=true'
+          printf '%s\n' 'screen/support_large=true'
+          printf '%s\n' 'screen/support_xlarge=true'
+          printf '%s\n' 'user_data_backup/allow=false'
+          printf '%s\n' 'command_line/extra_args=""'
+          printf '%s\n' 'apk_expansion/enable=false'
+          printf '%s\n' 'apk_expansion/SALT=""'
+          printf '%s\n' 'apk_expansion/public_key=""'
+          printf '%s\n' 'permissions/custom_permissions=PackedStringArray()'
+          printf '%s\n' ''
           grep -E 'name=|gradle_build/use_gradle_build|package/unique_name|package/signed' export_presets.cfg
 
       - name: Export Android debug APK
