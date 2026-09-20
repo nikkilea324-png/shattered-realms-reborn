@@ -121,7 +121,8 @@ jobs:
           printf '%s\n' >> export_presets.cfg 'apk_expansion/public_key=""'
           printf '%s\n' >> export_presets.cfg 'permissions/custom_permissions=PackedStringArray()'
           printf '%s\n' >> export_presets.cfg ''
-          grep -E 'name=|gradle_build/use_gradle_build|package/unique_name|package/signed' export_presets.cfg
+          sed -i '/package\/signed=true/a keystore/debug="'"$HOME"'/.android/debug.keystore"\nkeystore/debug_user="androiddebugkey"\nkeystore/debug_password="android"' export_presets.cfg
+          grep -E 'name=|gradle_build/use_gradle_build|package/unique_name|package/signed|keystore/debug' export_presets.cfg
 
       - name: Export Android debug APK
         shell: bash
