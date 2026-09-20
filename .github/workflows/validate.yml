@@ -67,8 +67,8 @@ jobs:
         shell: bash
         run: |
           set -eux
-          cp "$HOME/.local/share/godot/export_templates/4.5.2.stable/android_debug.apk" ci_android_debug.apk
-          sed -i 's|custom_template/debug=""|custom_template/debug="res://ci_android_debug.apk"|' export_presets.cfg
+          test -f "$HOME/.local/share/godot/export_templates/4.5.2.stable/android_debug.apk"
+          sed -i 's|custom_template/debug=".*"|custom_template/debug=""|' export_presets.cfg
           sed -i 's|gradle_build/use_gradle_build=true|gradle_build/use_gradle_build=false|' export_presets.cfg
           grep -E 'custom_template/debug|gradle_build/use_gradle_build' export_presets.cfg
 
