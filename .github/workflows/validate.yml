@@ -63,14 +63,66 @@ jobs:
       - name: Import project
         run: godot --headless --editor --quit --path .
 
-      - name: Prepare prebuilt Android debug template
+      - name: Prepare minimal Android export preset
         shell: bash
         run: |
           set -eux
           test -f "$HOME/.local/share/godot/export_templates/4.5.2.stable/android_debug.apk"
-          sed -i 's|custom_template/debug=".*"|custom_template/debug=""|' export_presets.cfg
-          sed -i 's|gradle_build/use_gradle_build=true|gradle_build/use_gradle_build=false|' export_presets.cfg
-          grep -E 'custom_template/debug|gradle_build/use_gradle_build' export_presets.cfg
+          cat > export_presets.cfg <<'PRESET'
+[preset.0]
+
+name="Android"
+platform="Android"
+runnable=true
+dedicated_server=false
+custom_features=""
+export_filter="all_resources"
+include_filter=""
+exclude_filter=""
+export_path="build/android/ShatteredRealms.apk"
+encryption_include_filters=""
+encryption_exclude_filters=""
+encrypt_pck=false
+encrypt_directory=false
+
+[preset.0.options]
+
+custom_template/debug=""
+custom_template/release=""
+gradle_build/use_gradle_build=false
+gradle_build/export_format=0
+gradle_build/min_sdk=""
+gradle_build/target_sdk=""
+architectures/armeabi-v7a=false
+architectures/arm64-v8a=true
+architectures/x86=false
+architectures/x86_64=false
+version/code=1
+version/name="0.1.0"
+package/unique_name="com.shatteredrealms.game"
+package/name="Shattered Realms"
+package/signed=true
+package/app_category=2
+package/retain_data_on_uninstall=false
+package/exclude_from_recents=false
+package/show_in_android_tv=false
+package/show_in_app_library=true
+package/show_as_launcher_app=false
+graphics/opengl_debug=false
+xr_features/xr_mode=0
+screen/immersive_mode=true
+screen/support_small=true
+screen/support_normal=true
+screen/support_large=true
+screen/support_xlarge=true
+user_data_backup/allow=false
+command_line/extra_args=""
+apk_expansion/enable=false
+apk_expansion/SALT=""
+apk_expansion/public_key=""
+permissions/custom_permissions=PackedStringArray()
+PRESET
+          grep -E 'name=|gradle_build/use_gradle_build|package/unique_name|package/signed' export_presets.cfg
 
       - name: Export Android debug APK
         shell: bash
