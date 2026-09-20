@@ -1,0 +1,19 @@
+# Godot 4+
+.godot/
+.export/
+*.tmp
+*.log
+
+# IDE/editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build output
+build/
+dist/
+*.apk
+*.aab
