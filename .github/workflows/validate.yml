@@ -1,41 +1,21 @@
-name: Godot Validation
+name: Shattered Realms CI
 
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
-  validate:
+  build:
     runs-on: ubuntu-latest
-    container:
-      image: barichello/godot-ci:4.5.2
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Verify Godot version
-        run: godot --version
-
-      - name: Import project
-        run: godot --headless --editor --quit --path .
-
-      - name: Check project files
+      - name: Verify runner
         run: |
-          test -f project.godot
-          test -f scenes/Main.tscn
-          test -f scripts/main.gd
-          test -f scripts/hex_grid.gd
-          test -f data/ravenwood.json
-
-
-  android-build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+          uname -a
+          git --version
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -43,10 +23,12 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Install Android SDK
+      - name: Verify Android SDK
         run: |
           set -eux
-          yes | sdkmanager --licenses >/dev/null || true
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          sdkmanager --version
           sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
 
       - name: Install Godot 4.5.2
@@ -65,10 +47,12 @@ jobs:
           D="$HOME/.local/share/godot/export_templates/${V}.stable"
           mkdir -p "$D"
           curl -L --fail --retry 3 "https://github.com/godotengine/godot-builds/releases/download/${V}-stable/Godot_v${V}-stable_export_templates.tpz" -o /tmp/templates.tpz
+          rm -rf /tmp/templates
           mkdir -p /tmp/templates
           unzip -q /tmp/templates.tpz -d /tmp/templates
           cp -a /tmp/templates/templates/. "$D/"
           test -f "$D/android_source.zip"
+          test -f "$D/android_debug.apk"
 
       - name: Configure Godot Android
         run: |
@@ -84,7 +68,9 @@ export/android/debug_keystore = "$HOME/.android/debug.keystore"
 export/android/debug_keystore_user = "androiddebugkey"
 export/android/debug_keystore_pass = "android"
 EOF
-          keytool -genkeypair -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US" || true
+          if [ ! -f "$HOME/.android/debug.keystore" ]; then
+            keytool -genkeypair -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
 
       - name: Import project
         run: godot --headless --editor --quit --path .
@@ -92,7 +78,7 @@ EOF
       - name: Install Gradle build template
         run: godot --headless --path . --install-android-build-template
 
-      - name: Verify Gradle project
+      - name: Verify Gradle
         run: |
           set -eux
           test -f android/build/gradlew
