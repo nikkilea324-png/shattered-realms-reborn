@@ -83,3 +83,5 @@ jobs:
           if-no-files-found: error
 
 # CI trigger: rebuild signed Android APK after signing fix.
+
+# CI trigger: validate corrected hex rendering.
