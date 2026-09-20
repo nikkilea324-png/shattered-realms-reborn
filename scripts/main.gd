@@ -1,6 +1,8 @@
 extends Node3D
 
 const HEX_GRID := preload("res://scripts/hex_grid.gd")
+const GAME_STATE := preload("res://scripts/game_state.gd")
+const TERRAIN_STATE := preload("res://scripts/terrain_state.gd")
 
 const HEX_SIZE := 1.0
 const HEX_HEIGHT := 0.22
@@ -13,6 +15,12 @@ var hex_nodes: Dictionary = {}
 var commander_hex := Vector2i(5, 8)
 var commander: Node3D
 var selection_ring: MeshInstance3D
+var game_state := GAME_STATE.new()
+var reachable_nodes: Dictionary = {}
+var reachable_hexes: Dictionary = {}
+var commander_selected := false
+var movement_label: Label
+var turn_label: Label
 
 func _ready() -> void:
     grid.configure(BOARD_WIDTH, BOARD_HEIGHT)
@@ -20,7 +28,10 @@ func _ready() -> void:
     _build_commander()
     _build_locations()
     _build_selection()
-    print("Ravenwood visual slice initialized: %d hexes" % grid.hex_count())
+    _build_hud()
+    game_state.initialize_hero("edrin_vale", "Edrin Vale", commander_hex, 3)
+    _refresh_hud()
+    print("Ravenwood gameplay slice initialized: %d hexes" % grid.hex_count())
 
 func _build_ravenwood() -> void:
     var center := _board_center()
@@ -126,6 +137,121 @@ func _build_selection() -> void:
     selection_ring.visible = false
     add_child(selection_ring)
 
+func _build_hud() -> void:
+    var layer := CanvasLayer.new()
+    layer.name = "GameplayHUD"
+    add_child(layer)
+
+    var panel := ColorRect.new()
+    panel.position = Vector2(18, 18)
+    panel.size = Vector2(300, 88)
+    panel.color = Color(0.035, 0.03, 0.025, 0.88)
+    layer.add_child(panel)
+
+    turn_label = Label.new()
+    turn_label.position = Vector2(16, 10)
+    turn_label.add_theme_font_size_override("font_size", 22)
+    panel.add_child(turn_label)
+
+    movement_label = Label.new()
+    movement_label.position = Vector2(16, 44)
+    movement_label.add_theme_font_size_override("font_size", 18)
+    panel.add_child(movement_label)
+
+    var end_turn := Button.new()
+    end_turn.text = "END TURN"
+    end_turn.position = Vector2(18, 116)
+    end_turn.size = Vector2(160, 52)
+    end_turn.add_theme_font_size_override("font_size", 18)
+    end_turn.pressed.connect(_end_turn)
+    layer.add_child(end_turn)
+
+func _refresh_hud() -> void:
+    if turn_label == null or movement_label == null:
+        return
+    turn_label.text = "RAVENWOOD  •  TURN %d" % game_state.turn
+    movement_label.text = "EDRIN VALE  •  MOVE %d / %d" % [game_state.hero.movement_remaining, game_state.hero.max_movement]
+
+func _end_turn() -> void:
+    game_state.begin_campaign_turn()
+    commander_selected = false
+    _clear_reachable()
+    _refresh_hud()
+
+func _clear_reachable() -> void:
+    for marker in reachable_nodes.values():
+        if is_instance_valid(marker):
+            marker.queue_free()
+    reachable_nodes.clear()
+    reachable_hexes.clear()
+
+func _movement_cost(coord: Vector2i) -> int:
+    var state := TERRAIN_STATE.new()
+    state.configure(_terrain_type(coord), int(round(_elevation(coord) * 10.0)))
+    return state.movement_cost
+
+func _terrain_type(coord: Vector2i) -> TerrainState.TerrainType:
+    if coord == Vector2i(5, 8):
+        return TerrainState.TerrainType.FORT
+    if coord == Vector2i(12, 10):
+        return TerrainState.TerrainType.VILLAGE
+    if coord == Vector2i(18, 5):
+        return TerrainState.TerrainType.MINE
+    if coord.x >= 17 and coord.y <= 6:
+        return TerrainState.TerrainType.MOUNTAIN
+    if coord.x <= 7 and coord.y >= 10:
+        return TerrainState.TerrainType.MARSH
+    if coord.x >= 9 and coord.x <= 12 and coord.y >= 5 and coord.y <= 13:
+        return TerrainState.TerrainType.FOREST
+    if _elevation(coord) > 0.9:
+        return TerrainState.TerrainType.HILLS
+    return TerrainState.TerrainType.PLAINS
+
+func _show_reachable() -> void:
+    _clear_reachable()
+    var budget := game_state.hero.movement_remaining
+    if budget <= 0:
+        return
+    var frontier: Array[Vector2i] = [game_state.hero.hex]
+    var costs: Dictionary = {game_state.hero.hex: 0}
+    while not frontier.is_empty():
+        var current := frontier.pop_front()
+        var current_cost: int = costs[current]
+        for neighbor in grid.neighbors(current):
+            var next_cost := current_cost + _movement_cost(neighbor)
+            if next_cost > budget:
+                continue
+            if not costs.has(neighbor) or next_cost < int(costs[neighbor]):
+                costs[neighbor] = next_cost
+                frontier.append(neighbor)
+    costs.erase(game_state.hero.hex)
+    for coord in costs.keys():
+        reachable_hexes[coord] = int(costs[coord])
+        var marker := MeshInstance3D.new()
+        var mesh := CylinderMesh.new()
+        mesh.top_radius = 0.78
+        mesh.bottom_radius = 0.78
+        mesh.height = 0.035
+        mesh.radial_segments = 6
+        marker.mesh = mesh
+        marker.position = grid.to_world(coord, HEX_SIZE) - _board_center()
+        marker.position.y = _elevation(coord) + 0.12
+        marker.material_override = _material(Color(0.30, 0.50, 0.32), 0.0)
+        add_child(marker)
+        reachable_nodes[coord] = marker
+
+func _move_commander(destination: Vector2i, cost: int) -> void:
+    if not game_state.hero.spend(cost):
+        return
+    commander_hex = destination
+    game_state.hero.hex = destination
+    commander.position = grid.to_world(destination, HEX_SIZE) - _board_center()
+    commander.position.y = _elevation(destination) + 0.65
+    selection_ring.position = grid.to_world(destination, HEX_SIZE) - _board_center()
+    selection_ring.position.y = _elevation(destination) + 0.14
+    _show_reachable()
+    _refresh_hud()
+
 func _unhandled_input(event: InputEvent) -> void:
     if event is InputEventScreenTouch and event.pressed:
         _select_from_screen(event.position)
@@ -153,7 +279,11 @@ func _select_from_screen(screen_position: Vector2) -> void:
     if parts.size() != 3:
         return
 
-    select_hex(Vector2i(int(parts[1]), int(parts[2])))
+    var coord := Vector2i(int(parts[1]), int(parts[2]))
+    if commander_selected and reachable_hexes.has(coord):
+        _move_commander(coord, int(reachable_hexes[coord]))
+    else:
+        select_hex(coord)
 
 func select_hex(coord: Vector2i) -> void:
     if not grid.is_valid(coord):
@@ -162,6 +292,12 @@ func select_hex(coord: Vector2i) -> void:
     selection_ring.visible = true
     selection_ring.position = grid.to_world(coord, HEX_SIZE) - _board_center()
     selection_ring.position.y = _elevation(coord) + 0.14
+    commander_selected = coord == game_state.hero.hex
+    if commander_selected:
+        _show_reachable()
+    else:
+        _clear_reachable()
+    _refresh_hud()
     print("Selected Ravenwood hex: ", coord)
 
 func _board_center() -> Vector3:
