@@ -8,6 +8,7 @@ on:
 jobs:
   android-gradle:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,23 +23,28 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install Android SDK components
+        shell: bash
         run: |
+          set -eux
           yes | sdkmanager --licenses >/dev/null || true
           sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
+          sdkmanager --list_installed
           adb version
           test -d "$ANDROID_HOME/platforms/android-33"
           test -d "$ANDROID_HOME/build-tools/33.0.2"
 
       - name: Install Godot 4.5.2
+        shell: bash
         run: |
           set -eux
           GODOT_VERSION="4.5.2"
           curl -L --fail --retry 3 "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip" -o /tmp/godot.zip
           unzip -q /tmp/godot.zip -d /tmp/godot
-          sudo install -m 0755 /tmp/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          sudo install -m 0755 "/tmp/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
           godot --version
 
       - name: Install matching Godot export templates
+        shell: bash
         run: |
           set -eux
           GODOT_VERSION="4.5.2"
@@ -53,12 +59,13 @@ jobs:
           test -f "$TEMPLATE_DIR/android_debug.apk"
 
       - name: Configure Godot Android paths
+        shell: bash
         run: |
           set -eux
-          mkdir -p "$HOME/.config/godot"
+          mkdir -p "$HOME/.config/godot" "$HOME/.android"
           SETTINGS="$HOME/.config/godot/editor_settings-4.5.tres"
           cat > "$SETTINGS" <<EOF
-[gd_resource type="EditorSettings" format=3]
+[gd_resource type=EditorSettings format=3]
 
 [resource]
 export/android/java_sdk_path = "$JAVA_HOME"
@@ -67,28 +74,34 @@ export/android/debug_keystore = "$HOME/.android/debug.keystore"
 export/android/debug_keystore_user = "androiddebugkey"
 export/android/debug_keystore_pass = "android"
 EOF
+          if [ ! -f "$HOME/.android/debug.keystore" ]; then
+            keytool -genkeypair -v               -keystore "$HOME/.android/debug.keystore"               -storepass android               -alias androiddebugkey               -keypass android               -keyalg RSA               -keysize 2048               -validity 10000               -dname "CN=Android Debug,O=Android,C=US"
+          fi
 
       - name: Import project
         run: godot --headless --editor --quit --path .
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6.3.0
-        with:
-          cache-provider: basic
-
-      - name: Install project Gradle build template
+      - name: Install Godot Gradle build template
         run: godot --headless --path . --install-android-build-template
 
-      - name: Verify Gradle template
+      - name: Verify Gradle project
+        shell: bash
         run: |
+          set -eux
           test -f android/build/gradlew
           test -f android/build/build.gradle
           chmod +x android/build/gradlew
+          cd android/build
+          ./gradlew --version
 
-      - name: Export Android debug build
+      - name: Export Android debug APK
+        shell: bash
         run: |
+          set -eux
           mkdir -p build/android
           godot --headless --path . --export-debug "Android" build/android/ShatteredRealms.apk
+          test -s build/android/ShatteredRealms.apk
+          ls -lh build/android/ShatteredRealms.apk
 
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
