@@ -18,6 +18,7 @@ func _ready() -> void:
     grid.configure(BOARD_WIDTH, BOARD_HEIGHT)
     _build_ravenwood()
     _build_commander()
+    _build_locations()
     _build_selection()
     print("Ravenwood visual slice initialized: %d hexes" % grid.hex_count())
 
@@ -91,6 +92,25 @@ func _build_commander() -> void:
     commander.add_child(head)
 
     add_child(commander)
+
+func _build_locations() -> void:
+    _build_location_marker(Vector2i(5, 8), "Ravenwood Keep", Color(0.32, 0.32, 0.28), 0.55)
+    _build_location_marker(Vector2i(12, 10), "Old Road Village", Color(0.36, 0.28, 0.18), 0.38)
+    _build_location_marker(Vector2i(18, 5), "Whispering Mine", Color(0.22, 0.25, 0.27), 0.34)
+
+func _build_location_marker(coord: Vector2i, label: String, color: Color, height: float) -> void:
+    var marker := MeshInstance3D.new()
+    marker.name = label.replace(" ", "_")
+    var mesh := CylinderMesh.new()
+    mesh.top_radius = 0.22
+    mesh.bottom_radius = 0.30
+    mesh.height = height
+    mesh.radial_segments = 6
+    marker.mesh = mesh
+    marker.material_override = _material(color, 0.05)
+    marker.position = grid.to_world(coord, HEX_SIZE) - _board_center()
+    marker.position.y = _elevation(coord) + 0.20 + height * 0.5
+    add_child(marker)
 
 func _build_selection() -> void:
     selection_ring = MeshInstance3D.new()
