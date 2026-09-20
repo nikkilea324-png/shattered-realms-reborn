@@ -1,0 +1,31 @@
+name: Godot Validation
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.5.2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify Godot version
+        run: godot --version
+
+      - name: Import project
+        run: godot --headless --editor --quit --path .
+
+      - name: Check project files
+        run: |
+          test -f project.godot
+          test -f scenes/Main.tscn
+          test -f scripts/main.gd
+          test -f scripts/hex_grid.gd
+          test -f data/ravenwood.json
