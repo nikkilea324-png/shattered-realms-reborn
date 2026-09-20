@@ -1,0 +1,40 @@
+{
+  "id": "ravenwood",
+  "name": "Ravenwood",
+  "grid": {
+    "width": 24,
+    "height": 16,
+    "coordinate_system": "offset_hex",
+    "playable_hexes": 384
+  },
+  "terrain_rules": {
+    "normal_movement": 2,
+    "difficult_terrain_cost": 2,
+    "elevation_enabled": true
+  },
+  "starting_locations": [
+    {
+      "id": "ravenwood_keep",
+      "type": "fort",
+      "hex": [5, 8]
+    },
+    {
+      "id": "old_road_village",
+      "type": "village",
+      "hex": [12, 10]
+    },
+    {
+      "id": "whispering_mine",
+      "type": "mine",
+      "hex": [18, 5]
+    }
+  ],
+  "hidden_locations": [
+    {
+      "id": "forgotten_cave",
+      "type": "dungeon",
+      "hex": [20, 12],
+      "hidden": true
+    }
+  ]
+}
