@@ -39,8 +39,7 @@ func _build_ravenwood() -> void:
             mesh.height = HEX_HEIGHT
             mesh.radial_segments = 6
             mesh.rings = 1
-            mesh.rotation_degrees = Vector3(0, 30, 0)
-            mesh_instance.mesh = mesh
+                        mesh_instance.mesh = mesh
             mesh_instance.position.y = -HEX_HEIGHT * 0.5
             mesh_instance.material_override = _terrain_material(coord)
             tile.add_child(mesh_instance)
