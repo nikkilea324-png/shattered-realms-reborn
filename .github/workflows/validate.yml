@@ -12,64 +12,52 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Verify runner
-        run: |
-          uname -a
-          git --version
-
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Verify Android SDK
+      - name: Install Android SDK components
+        shell: bash
         run: |
           set -eux
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-          sdkmanager --version
-          sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-33" "build-tools;33.0.2"
+          "$SDKMANAGER" --list_installed
 
       - name: Install Godot 4.5.2
+        shell: bash
         run: |
           set -eux
-          V="4.5.2"
-          curl -L --fail --retry 3 "https://github.com/godotengine/godot-builds/releases/download/${V}-stable/Godot_v${V}-stable_linux.x86_64.zip" -o /tmp/godot.zip
+          curl -L --fail --retry 3 "https://github.com/godotengine/godot-builds/releases/download/4.5.2-stable/Godot_v4.5.2-stable_linux.x86_64.zip" -o /tmp/godot.zip
           unzip -q /tmp/godot.zip -d /tmp/godot
-          sudo install -m 0755 "/tmp/godot/Godot_v${V}-stable_linux.x86_64" /usr/local/bin/godot
+          sudo install -m 0755 "/tmp/godot/Godot_v4.5.2-stable_linux.x86_64" /usr/local/bin/godot
           godot --version
 
-      - name: Install Godot export templates
+      - name: Install matching Godot export templates
+        shell: bash
         run: |
           set -eux
-          V="4.5.2"
-          D="$HOME/.local/share/godot/export_templates/${V}.stable"
-          mkdir -p "$D"
-          curl -L --fail --retry 3 "https://github.com/godotengine/godot-builds/releases/download/${V}-stable/Godot_v${V}-stable_export_templates.tpz" -o /tmp/templates.tpz
-          rm -rf /tmp/templates
-          mkdir -p /tmp/templates
-          unzip -q /tmp/templates.tpz -d /tmp/templates
-          cp -a /tmp/templates/templates/. "$D/"
-          test -f "$D/android_source.zip"
-          test -f "$D/android_debug.apk"
+          TEMPLATE_DIR="$HOME/.local/share/godot/export_templates/4.5.2.stable"
+          mkdir -p "$TEMPLATE_DIR"
+          curl -L --fail --retry 3 "https://github.com/godotengine/godot-builds/releases/download/4.5.2-stable/Godot_v4.5.2-stable_export_templates.tpz" -o /tmp/godot_templates.tpz
+          rm -rf /tmp/godot_templates
+          mkdir -p /tmp/godot_templates
+          unzip -q /tmp/godot_templates.tpz -d /tmp/godot_templates
+          cp -a /tmp/godot_templates/templates/. "$TEMPLATE_DIR/"
+          test -f "$TEMPLATE_DIR/android_source.zip"
 
-      - name: Configure Godot Android
+      - name: Configure Godot Android paths
+        shell: bash
         run: |
           set -eux
           mkdir -p "$HOME/.config/godot" "$HOME/.android"
-          cat > "$HOME/.config/godot/editor_settings-4.5.tres" <<EOF
-[gd_resource type=EditorSettings format=3]
-
-[resource]
-export/android/java_sdk_path = "$JAVA_HOME"
-export/android/android_sdk_path = "$ANDROID_HOME"
-export/android/debug_keystore = "$HOME/.android/debug.keystore"
-export/android/debug_keystore_user = "androiddebugkey"
-export/android/debug_keystore_pass = "android"
-EOF
+          printf '%s\n'             '[gd_resource type=EditorSettings format=3]'             ''             '[resource]'             "export/android/java_sdk_path = \"$JAVA_HOME\""             "export/android/android_sdk_path = \"$ANDROID_HOME\""             "export/android/debug_keystore = \"$HOME/.android/debug.keystore\""             'export/android/debug_keystore_user = "androiddebugkey"'             'export/android/debug_keystore_pass = "android"'             > "$HOME/.config/godot/editor_settings-4.5.tres"
           if [ ! -f "$HOME/.android/debug.keystore" ]; then
-            keytool -genkeypair -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            keytool -genkeypair -v               -keystore "$HOME/.android/debug.keystore"               -storepass android               -alias androiddebugkey               -keypass android               -keyalg RSA               -keysize 2048               -validity 10000               -dname "CN=Android Debug,O=Android,C=US"
           fi
 
       - name: Import project
@@ -78,7 +66,8 @@ EOF
       - name: Install Gradle build template
         run: godot --headless --path . --install-android-build-template
 
-      - name: Verify Gradle
+      - name: Verify generated Gradle project
+        shell: bash
         run: |
           set -eux
           test -f android/build/gradlew
@@ -88,6 +77,7 @@ EOF
           ./gradlew --version
 
       - name: Export Android debug APK
+        shell: bash
         run: |
           set -eux
           mkdir -p build/android
