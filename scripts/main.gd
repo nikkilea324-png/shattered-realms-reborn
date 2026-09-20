@@ -215,7 +215,7 @@ func _show_reachable() -> void:
     var frontier: Array[Vector2i] = [game_state.hero.hex]
     var costs: Dictionary = {game_state.hero.hex: 0}
     while not frontier.is_empty():
-        var current := frontier.pop_front()
+        var current: Vector2i = frontier.pop_front()
         var current_cost: int = costs[current]
         for neighbor in grid.neighbors(current):
             var next_cost := current_cost + _movement_cost(neighbor)
