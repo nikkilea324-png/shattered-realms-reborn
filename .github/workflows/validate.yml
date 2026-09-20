@@ -85,3 +85,5 @@ jobs:
 # CI trigger: rebuild signed Android APK after signing fix.
 
 # CI trigger: validate corrected hex rendering.
+
+# CI trigger: build commander movement milestone.
