@@ -145,3 +145,5 @@ jobs:
           name: shattered-realms-android-debug
           path: build/android/ShatteredRealms.apk
           if-no-files-found: error
+
+# CI trigger: rebuild signed Android APK after signing fix.
