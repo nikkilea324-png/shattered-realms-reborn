@@ -24,6 +24,7 @@ var commander_selected := false
 var movement_label: Label
 var turn_label: Label
 var army_label: Label
+var terrain_label: Label
 
 func _ready() -> void:
     grid.configure(BOARD_WIDTH, BOARD_HEIGHT)
@@ -241,6 +242,15 @@ func _build_hud() -> void:
     army_label.add_theme_font_size_override("font_size", 16)
     panel.add_child(army_label)
 
+    terrain_label = Label.new()
+    terrain_label.position = Vector2(16, 106)
+    terrain_label.add_theme_font_size_override("font_size", 14)
+    terrain_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    terrain_label.text = "SELECT A HEX"
+    panel.add_child(terrain_label)
+
+    panel.size.y = 168
+
     var end_turn := Button.new()
     end_turn.text = "END TURN"
     end_turn.position = Vector2(18, 174)
@@ -255,6 +265,13 @@ func _refresh_hud() -> void:
     turn_label.text = "RAVENWOOD  •  TURN %d" % game_state.turn
     movement_label.text = "EDRIN VALE  •  MOVE %d / %d" % [game_state.hero.movement_remaining, game_state.hero.max_movement]
     army_label.text = "RANGERS  •  %d TROOPS  •  POWER %d" % [army_state.total_units(), army_state.combat_power()]
+    if selected_hex.x >= 0:
+        var terrain_name := _terrain_name(_terrain_type(selected_hex))
+        var elev := _elevation(selected_hex)
+        var cost := _movement_cost(selected_hex)
+        terrain_label.text = "%s  •  ELEV %.1f  •  MOVE %d" % [terrain_name, elev, cost]
+    else:
+        terrain_label.text = "SELECT A HEX"
 
 func _end_turn() -> void:
     game_state.begin_campaign_turn()
@@ -273,6 +290,22 @@ func _movement_cost(coord: Vector2i) -> int:
     var state := TERRAIN_STATE.new()
     state.configure(_terrain_type(coord), int(round(_elevation(coord) * 10.0)))
     return state.movement_cost
+
+func _terrain_name(terrain: TerrainState.TerrainType) -> String:
+    match terrain:
+        TerrainState.TerrainType.PLAINS: return "PLAINS"
+        TerrainState.TerrainType.FOREST: return "FOREST"
+        TerrainState.TerrainType.HILLS: return "HILLS"
+        TerrainState.TerrainType.MOUNTAIN: return "MOUNTAIN"
+        TerrainState.TerrainType.MARSH: return "MARSH"
+        TerrainState.TerrainType.RIVER: return "RIVER"
+        TerrainState.TerrainType.ROAD: return "ROAD"
+        TerrainState.TerrainType.VILLAGE: return "VILLAGE"
+        TerrainState.TerrainType.FORT: return "FORT"
+        TerrainState.TerrainType.RUINS: return "RUINS"
+        TerrainState.TerrainType.MINE: return "MINE"
+        TerrainState.TerrainType.DUNGEON: return "DUNGEON"
+    return "UNKNOWN"
 
 func _terrain_type(coord: Vector2i) -> TerrainState.TerrainType:
     if coord == Vector2i(5, 8):
