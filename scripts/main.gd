@@ -44,6 +44,14 @@ func _ready() -> void:
 
 func _build_ravenwood() -> void:
     var center := _board_center()
+    var ground := MeshInstance3D.new()
+    ground.name = "Continuous_Terrain_Base"
+    var ground_mesh := BoxMesh.new()
+    ground_mesh.size = Vector3(40.0, 0.35, 30.0)
+    ground.mesh = ground_mesh
+    ground.position = center - center + Vector3(0, -0.30, 0)
+    ground.material_override = _material(Color(0.20, 0.28, 0.18), 0.0)
+    add_child(ground)
     for y in range(BOARD_HEIGHT):
         for x in range(BOARD_WIDTH):
             var coord := Vector2i(x, y)
@@ -150,11 +158,11 @@ func _add_terrain_visuals(tile: StaticBody3D, coord: Vector2i) -> void:
             track.position = Vector3(0, 0.18, -0.10)
             tile.add_child(track)
         TerrainState.TerrainType.PLAINS:
-            if (coord.x * 11 + coord.y * 7) % 5 == 0:
+            if (coord.x * 11 + coord.y * 7) % 3 == 0:
                 var grass := _make_cone(0.035, 0.18, 5, Color(0.38, 0.45, 0.22))
                 grass.position = Vector3(-0.22, 0.18, 0.18)
                 tile.add_child(grass)
-            if (coord.x * 5 + coord.y * 3) % 11 == 0:
+            if (coord.x * 5 + coord.y * 3) % 7 == 0:
                 _add_rock(tile, Vector3(0.32, 0.10, -0.22), 0.10)
 
 func _add_tree_cluster(tile: StaticBody3D, center: Vector3, scale: float) -> void:
@@ -304,13 +312,14 @@ func _build_hud() -> void:
 
     terrain_label = Label.new()
     terrain_label.position = Vector2(16, 106)
-    terrain_label.size = Vector2(318, 30)
+    terrain_label.size = Vector2(318, 34)
+    terrain_label.clip_text = true
     terrain_label.add_theme_font_size_override("font_size", 14)
     terrain_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     terrain_label.text = "SELECT A HEX"
     panel.add_child(terrain_label)
 
-    panel.size.y = 168
+    panel.size.y = 158
 
     var end_turn := Button.new()
     end_turn.text = "END TURN"
@@ -511,8 +520,8 @@ func _terrain_material(coord: Vector2i) -> StandardMaterial3D:
     var value := int((coord.x * 7 + coord.y * 13) % 9)
 
     if _is_river(coord):
-        material.albedo_color = Color(0.13, 0.29, 0.34)
-        material.roughness = 0.65
+        material.albedo_color = Color(0.10, 0.34, 0.46)
+        material.roughness = 0.52
     elif _is_road(coord):
         material.albedo_color = Color(0.32, 0.27, 0.19)
         material.roughness = 0.98
@@ -523,7 +532,7 @@ func _terrain_material(coord: Vector2i) -> StandardMaterial3D:
         material.albedo_color = Color(0.20, 0.28, 0.19)
         material.roughness = 0.92
     elif coord.x >= 9 and coord.x <= 12 and coord.y >= 5 and coord.y <= 13:
-        material.albedo_color = Color(0.15, 0.24, 0.16)
+        material.albedo_color = Color(0.13, 0.30, 0.17)
         material.roughness = 0.9
     elif elevation > 0.9:
         material.albedo_color = Color(0.26, 0.27, 0.24)
@@ -532,7 +541,7 @@ func _terrain_material(coord: Vector2i) -> StandardMaterial3D:
         material.albedo_color = Color(0.27, 0.25, 0.19)
         material.roughness = 0.94
     else:
-        material.albedo_color = Color(0.24 + value * 0.008, 0.27 + value * 0.006, 0.19 + value * 0.004)
+        material.albedo_color = Color(0.28 + value * 0.007, 0.34 + value * 0.006, 0.20 + value * 0.004)
         material.roughness = 0.88
     return material
 
