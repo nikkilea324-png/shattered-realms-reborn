@@ -3,6 +3,7 @@ extends Node3D
 const HEX_GRID := preload("res://scripts/hex_grid.gd")
 const GAME_STATE := preload("res://scripts/game_state.gd")
 const TERRAIN_STATE := preload("res://scripts/terrain_state.gd")
+const ARMY_STATE := preload("res://scripts/army_state.gd")
 
 const HEX_SIZE := 1.0
 const HEX_HEIGHT := 0.22
@@ -16,11 +17,13 @@ var commander_hex := Vector2i(5, 8)
 var commander: Node3D
 var selection_ring: MeshInstance3D
 var game_state := GAME_STATE.new()
+var army_state := ARMY_STATE.new()
 var reachable_nodes: Dictionary = {}
 var reachable_hexes: Dictionary = {}
 var commander_selected := false
 var movement_label: Label
 var turn_label: Label
+var army_label: Label
 
 func _ready() -> void:
     grid.configure(BOARD_WIDTH, BOARD_HEIGHT)
@@ -30,6 +33,11 @@ func _ready() -> void:
     _build_selection()
     _build_hud()
     game_state.initialize_hero("edrin_vale", "Edrin Vale", commander_hex, 3)
+    army_state.configure("ravenwood_rangers", "Ravenwood Rangers", commander_hex, "edrin_vale")
+    army_state.add_unit("rangers", 12)
+    army_state.add_unit("archers", 18)
+    army_state.add_unit("swordsmen", 24)
+    army_state.add_unit("spearmen", 20)
     _refresh_hud()
     print("Ravenwood gameplay slice initialized: %d hexes" % grid.hex_count())
 
@@ -64,8 +72,47 @@ func _build_ravenwood() -> void:
             collision.position.y = -HEX_HEIGHT * 0.5
             tile.add_child(collision)
 
+            _add_terrain_visuals(tile, coord)
             add_child(tile)
             hex_nodes[coord] = tile
+
+func _add_terrain_visuals(tile: StaticBody3D, coord: Vector2i) -> void:
+    var terrain := _terrain_type(coord)
+    match terrain:
+        TerrainState.TerrainType.FOREST:
+            var tree := _make_cone(0.28, 0.72, 6, Color(0.08, 0.17, 0.10))
+            tree.position = Vector3(-0.18, 0.42, 0.04)
+            tile.add_child(tree)
+            var tree2 := _make_cone(0.20, 0.55, 6, Color(0.11, 0.21, 0.12))
+            tree2.position = Vector3(0.28, 0.30, -0.16)
+            tile.add_child(tree2)
+        TerrainState.TerrainType.MOUNTAIN:
+            var peak := _make_cone(0.62, 1.05, 6, Color(0.34, 0.33, 0.30))
+            peak.position.y = 0.48
+            tile.add_child(peak)
+            var snow := _make_cone(0.25, 0.25, 6, Color(0.62, 0.62, 0.58))
+            snow.position.y = 0.98
+            tile.add_child(snow)
+        TerrainState.TerrainType.HILLS:
+            var hill := _make_cylinder(0.48, 0.38, 8, Color(0.36, 0.33, 0.24))
+            hill.position.y = 0.20
+            tile.add_child(hill)
+        TerrainState.TerrainType.MARSH:
+            var pool := _make_cylinder(0.62, 0.025, 8, Color(0.15, 0.31, 0.27))
+            pool.position.y = 0.13
+            tile.add_child(pool)
+            var reed := _make_box(Vector3(0.06, 0.45, 0.06), Color(0.30, 0.42, 0.20))
+            reed.position = Vector3(0.30, 0.30, 0.15)
+            tile.add_child(reed)
+        TerrainState.TerrainType.RIVER:
+            var water := _make_box(Vector3(1.55, 0.035, 0.82), Color(0.12, 0.30, 0.38))
+            water.position.y = 0.13
+            water.rotation_degrees.y = 90
+            tile.add_child(water)
+        TerrainState.TerrainType.ROAD:
+            var road := _make_box(Vector3(1.35, 0.035, 0.36), Color(0.38, 0.31, 0.21))
+            road.position.y = 0.14
+            tile.add_child(road)
 
 func _build_commander() -> void:
     commander = Node3D.new()
@@ -103,26 +150,57 @@ func _build_commander() -> void:
     head.material_override = _material(Color(0.34, 0.27, 0.20), 0.4)
     commander.add_child(head)
 
+    var banner := _make_box(Vector3(0.05, 0.72, 0.32), Color(0.16, 0.27, 0.19))
+    banner.position = Vector3(0.12, 0.72, 0)
+    commander.add_child(banner)
+
     add_child(commander)
 
 func _build_locations() -> void:
-    _build_location_marker(Vector2i(5, 8), "Ravenwood Keep", Color(0.32, 0.32, 0.28), 0.55)
-    _build_location_marker(Vector2i(12, 10), "Old Road Village", Color(0.36, 0.28, 0.18), 0.38)
-    _build_location_marker(Vector2i(18, 5), "Whispering Mine", Color(0.22, 0.25, 0.27), 0.34)
+    _build_keep(Vector2i(5, 8))
+    _build_village(Vector2i(12, 10))
+    _build_mine(Vector2i(18, 5))
 
-func _build_location_marker(coord: Vector2i, label: String, color: Color, height: float) -> void:
-    var marker := MeshInstance3D.new()
-    marker.name = label.replace(" ", "_")
-    var mesh := CylinderMesh.new()
-    mesh.top_radius = 0.22
-    mesh.bottom_radius = 0.30
-    mesh.height = height
-    mesh.radial_segments = 6
-    marker.mesh = mesh
-    marker.material_override = _material(color, 0.05)
-    marker.position = grid.to_world(coord, HEX_SIZE) - _board_center()
-    marker.position.y = _elevation(coord) + 0.20 + height * 0.5
-    add_child(marker)
+func _build_keep(coord: Vector2i) -> void:
+    var root := Node3D.new()
+    root.name = "Ravenwood_Keep"
+    root.position = grid.to_world(coord, HEX_SIZE) - _board_center()
+    root.position.y = _elevation(coord) + 0.18
+    for pos in [Vector3(-0.42, 0.28, -0.42), Vector3(0.42, 0.28, -0.42), Vector3(-0.42, 0.28, 0.42), Vector3(0.42, 0.28, 0.42)]:
+        var tower := _make_cylinder(0.16, 0.55, 6, Color(0.30, 0.31, 0.29))
+        tower.position = pos
+        root.add_child(tower)
+    var walls := _make_box(Vector3(0.82, 0.22, 0.10), Color(0.26, 0.27, 0.25))
+    walls.position.y = 0.24
+    root.add_child(walls)
+    add_child(root)
+
+func _build_village(coord: Vector2i) -> void:
+    var root := Node3D.new()
+    root.name = "Old_Road_Village"
+    root.position = grid.to_world(coord, HEX_SIZE) - _board_center()
+    root.position.y = _elevation(coord) + 0.16
+    for pos in [Vector3(-0.34, 0.20, -0.25), Vector3(0.28, 0.18, 0.18)]:
+        var house := _make_box(Vector3(0.42, 0.32, 0.36), Color(0.42, 0.34, 0.24))
+        house.position = pos
+        root.add_child(house)
+        var roof := _make_cone(0.30, 0.28, 4, Color(0.24, 0.16, 0.12))
+        roof.position = pos + Vector3(0, 0.35, 0)
+        root.add_child(roof)
+    add_child(root)
+
+func _build_mine(coord: Vector2i) -> void:
+    var root := Node3D.new()
+    root.name = "Whispering_Mine"
+    root.position = grid.to_world(coord, HEX_SIZE) - _board_center()
+    root.position.y = _elevation(coord) + 0.18
+    var mound := _make_cone(0.55, 0.55, 6, Color(0.25, 0.24, 0.22))
+    mound.position.y = 0.24
+    root.add_child(mound)
+    var entrance := _make_cylinder(0.24, 0.08, 8, Color(0.05, 0.05, 0.045))
+    entrance.position.y = 0.52
+    root.add_child(entrance)
+    add_child(root)
 
 func _build_selection() -> void:
     selection_ring = MeshInstance3D.new()
@@ -144,8 +222,8 @@ func _build_hud() -> void:
 
     var panel := ColorRect.new()
     panel.position = Vector2(18, 18)
-    panel.size = Vector2(300, 88)
-    panel.color = Color(0.035, 0.03, 0.025, 0.88)
+    panel.size = Vector2(350, 142)
+    panel.color = Color(0.035, 0.03, 0.025, 0.90)
     layer.add_child(panel)
 
     turn_label = Label.new()
@@ -158,19 +236,25 @@ func _build_hud() -> void:
     movement_label.add_theme_font_size_override("font_size", 18)
     panel.add_child(movement_label)
 
+    army_label = Label.new()
+    army_label.position = Vector2(16, 75)
+    army_label.add_theme_font_size_override("font_size", 16)
+    panel.add_child(army_label)
+
     var end_turn := Button.new()
     end_turn.text = "END TURN"
-    end_turn.position = Vector2(18, 116)
+    end_turn.position = Vector2(18, 174)
     end_turn.size = Vector2(160, 52)
     end_turn.add_theme_font_size_override("font_size", 18)
     end_turn.pressed.connect(_end_turn)
     layer.add_child(end_turn)
 
 func _refresh_hud() -> void:
-    if turn_label == null or movement_label == null:
+    if turn_label == null or movement_label == null or army_label == null:
         return
     turn_label.text = "RAVENWOOD  •  TURN %d" % game_state.turn
     movement_label.text = "EDRIN VALE  •  MOVE %d / %d" % [game_state.hero.movement_remaining, game_state.hero.max_movement]
+    army_label.text = "RANGERS  •  %d TROOPS  •  POWER %d" % [army_state.total_units(), army_state.combat_power()]
 
 func _end_turn() -> void:
     game_state.begin_campaign_turn()
@@ -197,6 +281,10 @@ func _terrain_type(coord: Vector2i) -> TerrainState.TerrainType:
         return TerrainState.TerrainType.VILLAGE
     if coord == Vector2i(18, 5):
         return TerrainState.TerrainType.MINE
+    if _is_river(coord):
+        return TerrainState.TerrainType.RIVER
+    if _is_road(coord):
+        return TerrainState.TerrainType.ROAD
     if coord.x >= 17 and coord.y <= 6:
         return TerrainState.TerrainType.MOUNTAIN
     if coord.x <= 7 and coord.y >= 10:
@@ -206,6 +294,12 @@ func _terrain_type(coord: Vector2i) -> TerrainState.TerrainType:
     if _elevation(coord) > 0.9:
         return TerrainState.TerrainType.HILLS
     return TerrainState.TerrainType.PLAINS
+
+func _is_river(coord: Vector2i) -> bool:
+    return coord.x == 14 and coord.y >= 1 and coord.y <= 14
+
+func _is_road(coord: Vector2i) -> bool:
+    return (coord.y == 9 and coord.x >= 5 and coord.x <= 18) or (coord.y == 10 and coord.x >= 12 and coord.x <= 17)
 
 func _show_reachable() -> void:
     _clear_reachable()
@@ -245,6 +339,7 @@ func _move_commander(destination: Vector2i, cost: int) -> void:
         return
     commander_hex = destination
     game_state.hero.hex = destination
+    army_state.hex = destination
     commander.position = grid.to_world(destination, HEX_SIZE) - _board_center()
     commander.position.y = _elevation(destination) + 0.65
     selection_ring.position = grid.to_world(destination, HEX_SIZE) - _board_center()
@@ -321,7 +416,13 @@ func _terrain_material(coord: Vector2i) -> StandardMaterial3D:
     var elevation := _elevation(coord)
     var value := int((coord.x * 7 + coord.y * 13) % 9)
 
-    if coord.x >= 17 and coord.y <= 6:
+    if _is_river(coord):
+        material.albedo_color = Color(0.13, 0.29, 0.34)
+        material.roughness = 0.65
+    elif _is_road(coord):
+        material.albedo_color = Color(0.32, 0.27, 0.19)
+        material.roughness = 0.98
+    elif coord.x >= 17 and coord.y <= 6:
         material.albedo_color = Color(0.30, 0.29, 0.27)
         material.roughness = 0.96
     elif coord.x <= 7 and coord.y >= 10:
@@ -340,6 +441,36 @@ func _terrain_material(coord: Vector2i) -> StandardMaterial3D:
         material.albedo_color = Color(0.24 + value * 0.008, 0.27 + value * 0.006, 0.19 + value * 0.004)
         material.roughness = 0.88
     return material
+
+func _make_cylinder(radius: float, height: float, segments: int, color: Color) -> MeshInstance3D:
+    var node := MeshInstance3D.new()
+    var mesh := CylinderMesh.new()
+    mesh.top_radius = radius
+    mesh.bottom_radius = radius
+    mesh.height = height
+    mesh.radial_segments = segments
+    node.mesh = mesh
+    node.material_override = _material(color, 0.0)
+    return node
+
+func _make_cone(radius: float, height: float, segments: int, color: Color) -> MeshInstance3D:
+    var node := MeshInstance3D.new()
+    var mesh := CylinderMesh.new()
+    mesh.top_radius = 0.02
+    mesh.bottom_radius = radius
+    mesh.height = height
+    mesh.radial_segments = segments
+    node.mesh = mesh
+    node.material_override = _material(color, 0.0)
+    return node
+
+func _make_box(size: Vector3, color: Color) -> MeshInstance3D:
+    var node := MeshInstance3D.new()
+    var mesh := BoxMesh.new()
+    mesh.size = size
+    node.mesh = mesh
+    node.material_override = _material(color, 0.0)
+    return node
 
 func _material(color: Color, metallic: float) -> StandardMaterial3D:
     var material := StandardMaterial3D.new()
