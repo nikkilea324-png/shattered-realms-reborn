@@ -56,12 +56,12 @@ func _build_ravenwood() -> void:
             var mesh := CylinderMesh.new()
             mesh.top_radius = HEX_SIZE
             mesh.bottom_radius = HEX_SIZE
-            mesh.height = HEX_HEIGHT
+            mesh.height = HEX_HEIGHT + _elevation(coord) * 0.22
             mesh.radial_segments = 6
             mesh.rings = 1
             mesh_instance.mesh = mesh
             mesh_instance.rotation_degrees = Vector3(0, 30, 0)
-            mesh_instance.position.y = -HEX_HEIGHT * 0.5
+            mesh_instance.position.y = -(HEX_HEIGHT + _elevation(coord) * 0.22) * 0.5
             mesh_instance.material_override = _terrain_material(coord)
             tile.add_child(mesh_instance)
 
@@ -81,20 +81,23 @@ func _add_terrain_visuals(tile: StaticBody3D, coord: Vector2i) -> void:
     var terrain := _terrain_type(coord)
     match terrain:
         TerrainState.TerrainType.FOREST:
-            _add_tree_cluster(tile, Vector3(-0.42, 0.30, -0.28), 0.92)
-            _add_tree_cluster(tile, Vector3(0.30, 0.26, 0.20), 0.72)
-            _add_tree_cluster(tile, Vector3(0.08, 0.22, -0.38), 0.58)
+            _add_tree_cluster(tile, Vector3(-0.40, 0.28, -0.25), 1.18)
+            _add_tree_cluster(tile, Vector3(0.32, 0.25, 0.22), 0.92)
+            if (coord.x * 7 + coord.y * 11) % 3 == 0:
+                _add_tree_cluster(tile, Vector3(0.02, 0.24, -0.38), 0.78)
         TerrainState.TerrainType.MOUNTAIN:
-            var base := _make_cylinder(0.72, 0.28, 7, Color(0.25, 0.24, 0.22))
-            base.position.y = 0.16
+            var base := _make_cylinder(0.72, 0.34, 7, Color(0.25, 0.24, 0.22))
+            base.position.y = 0.18
             tile.add_child(base)
-            var peak := _make_cone(0.58, 1.10, 6, Color(0.36, 0.35, 0.32))
-            peak.position.y = 0.74
-            tile.add_child(peak)
-            var snow := _make_cone(0.22, 0.34, 6, Color(0.72, 0.72, 0.68))
-            snow.position = Vector3(-0.08, 1.30, -0.02)
-            tile.add_child(snow)
-            _add_rock(tile, Vector3(0.38, 0.18, 0.24), 0.18)
+            if (coord.x + coord.y) % 3 == 0:
+                var peak := _make_cone(0.62, 1.05, 6, Color(0.36, 0.35, 0.32))
+                peak.position = Vector3(-0.12, 0.72, 0.02)
+                tile.add_child(peak)
+                var snow := _make_cone(0.24, 0.30, 6, Color(0.72, 0.72, 0.68))
+                snow.position = Vector3(-0.18, 1.27, 0.02)
+                tile.add_child(snow)
+            if (coord.x * 3 + coord.y) % 4 == 0:
+                _add_rock(tile, Vector3(0.34, 0.18, 0.24), 0.16)
         TerrainState.TerrainType.HILLS:
             var hill := _make_cylinder(0.68, 0.34, 10, Color(0.34, 0.31, 0.22))
             hill.position.y = 0.18
@@ -138,8 +141,8 @@ func _add_tree_cluster(tile: StaticBody3D, center: Vector3, scale: float) -> voi
     var trunk := _make_cylinder(0.075 * scale, 0.42 * scale, 6, Color(0.25, 0.15, 0.09))
     trunk.position = center + Vector3(0, 0.21 * scale, 0)
     tile.add_child(trunk)
-    for offset in [Vector3(0, 0.48, 0), Vector3(-0.13, 0.40, 0.02), Vector3(0.13, 0.38, -0.03)]:
-        var crown := _make_cone(0.25 * scale, 0.42 * scale, 7, Color(0.14, 0.28, 0.15))
+    for offset in [Vector3(0, 0.48, 0), Vector3(-0.15, 0.39, 0.02), Vector3(0.15, 0.37, -0.03)]:
+        var crown := _make_cone(0.30 * scale, 0.46 * scale, 7, Color(0.12, 0.27, 0.14))
         crown.position = center + offset * scale
         tile.add_child(crown)
     var highlight := _make_cone(0.13 * scale, 0.22 * scale, 7, Color(0.30, 0.45, 0.21))
@@ -281,6 +284,7 @@ func _build_hud() -> void:
 
     terrain_label = Label.new()
     terrain_label.position = Vector2(16, 106)
+    terrain_label.size = Vector2(318, 30)
     terrain_label.add_theme_font_size_override("font_size", 14)
     terrain_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     terrain_label.text = "SELECT A HEX"
