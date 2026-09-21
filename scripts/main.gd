@@ -81,39 +81,76 @@ func _add_terrain_visuals(tile: StaticBody3D, coord: Vector2i) -> void:
     var terrain := _terrain_type(coord)
     match terrain:
         TerrainState.TerrainType.FOREST:
-            var tree := _make_cone(0.28, 0.72, 6, Color(0.08, 0.17, 0.10))
-            tree.position = Vector3(-0.18, 0.42, 0.04)
-            tile.add_child(tree)
-            var tree2 := _make_cone(0.20, 0.55, 6, Color(0.11, 0.21, 0.12))
-            tree2.position = Vector3(0.28, 0.30, -0.16)
-            tile.add_child(tree2)
+            _add_tree_cluster(tile, Vector3(-0.42, 0.30, -0.28), 0.92)
+            _add_tree_cluster(tile, Vector3(0.30, 0.26, 0.20), 0.72)
+            _add_tree_cluster(tile, Vector3(0.08, 0.22, -0.38), 0.58)
         TerrainState.TerrainType.MOUNTAIN:
-            var peak := _make_cone(0.62, 1.05, 6, Color(0.34, 0.33, 0.30))
-            peak.position.y = 0.48
+            var base := _make_cylinder(0.72, 0.28, 7, Color(0.25, 0.24, 0.22))
+            base.position.y = 0.16
+            tile.add_child(base)
+            var peak := _make_cone(0.58, 1.10, 6, Color(0.36, 0.35, 0.32))
+            peak.position.y = 0.74
             tile.add_child(peak)
-            var snow := _make_cone(0.25, 0.25, 6, Color(0.62, 0.62, 0.58))
-            snow.position.y = 0.98
+            var snow := _make_cone(0.22, 0.34, 6, Color(0.72, 0.72, 0.68))
+            snow.position = Vector3(-0.08, 1.30, -0.02)
             tile.add_child(snow)
+            _add_rock(tile, Vector3(0.38, 0.18, 0.24), 0.18)
         TerrainState.TerrainType.HILLS:
-            var hill := _make_cylinder(0.48, 0.38, 8, Color(0.36, 0.33, 0.24))
-            hill.position.y = 0.20
+            var hill := _make_cylinder(0.68, 0.34, 10, Color(0.34, 0.31, 0.22))
+            hill.position.y = 0.18
             tile.add_child(hill)
+            var cap := _make_cylinder(0.52, 0.20, 10, Color(0.28, 0.36, 0.21))
+            cap.position.y = 0.42
+            tile.add_child(cap)
+            _add_rock(tile, Vector3(-0.30, 0.12, 0.22), 0.12)
         TerrainState.TerrainType.MARSH:
-            var pool := _make_cylinder(0.62, 0.025, 8, Color(0.15, 0.31, 0.27))
-            pool.position.y = 0.13
+            var pool := _make_cylinder(0.70, 0.035, 10, Color(0.10, 0.28, 0.25))
+            pool.position.y = 0.14
             tile.add_child(pool)
-            var reed := _make_box(Vector3(0.06, 0.45, 0.06), Color(0.30, 0.42, 0.20))
-            reed.position = Vector3(0.30, 0.30, 0.15)
-            tile.add_child(reed)
+            for pos in [Vector3(0.30, 0.28, 0.15), Vector3(-0.25, 0.26, -0.20), Vector3(0.05, 0.24, 0.32)]:
+                var reed := _make_box(Vector3(0.035, 0.40, 0.035), Color(0.29, 0.42, 0.19))
+                reed.position = pos
+                reed.rotation_degrees.z = -8.0
+                tile.add_child(reed)
         TerrainState.TerrainType.RIVER:
-            var water := _make_box(Vector3(1.55, 0.035, 0.82), Color(0.12, 0.30, 0.38))
-            water.position.y = 0.13
+            var water := _make_box(Vector3(1.58, 0.045, 0.84), Color(0.10, 0.32, 0.43))
+            water.position.y = 0.15
             water.rotation_degrees.y = 90
             tile.add_child(water)
+            _add_rock(tile, Vector3(-0.46, 0.16, 0.34), 0.11)
+            _add_rock(tile, Vector3(0.43, 0.15, -0.30), 0.09)
         TerrainState.TerrainType.ROAD:
-            var road := _make_box(Vector3(1.35, 0.035, 0.36), Color(0.38, 0.31, 0.21))
-            road.position.y = 0.14
+            var road := _make_box(Vector3(1.42, 0.045, 0.38), Color(0.43, 0.32, 0.20))
+            road.position.y = 0.15
             tile.add_child(road)
+            var track := _make_box(Vector3(1.25, 0.012, 0.06), Color(0.28, 0.22, 0.15))
+            track.position = Vector3(0, 0.18, -0.10)
+            tile.add_child(track)
+        TerrainState.TerrainType.PLAINS:
+            if (coord.x * 11 + coord.y * 7) % 5 == 0:
+                var grass := _make_cone(0.035, 0.18, 5, Color(0.38, 0.45, 0.22))
+                grass.position = Vector3(-0.22, 0.18, 0.18)
+                tile.add_child(grass)
+            if (coord.x * 5 + coord.y * 3) % 11 == 0:
+                _add_rock(tile, Vector3(0.32, 0.10, -0.22), 0.10)
+
+func _add_tree_cluster(tile: StaticBody3D, center: Vector3, scale: float) -> void:
+    var trunk := _make_cylinder(0.075 * scale, 0.42 * scale, 6, Color(0.25, 0.15, 0.09))
+    trunk.position = center + Vector3(0, 0.21 * scale, 0)
+    tile.add_child(trunk)
+    for offset in [Vector3(0, 0.48, 0), Vector3(-0.13, 0.40, 0.02), Vector3(0.13, 0.38, -0.03)]:
+        var crown := _make_cone(0.25 * scale, 0.42 * scale, 7, Color(0.14, 0.28, 0.15))
+        crown.position = center + offset * scale
+        tile.add_child(crown)
+    var highlight := _make_cone(0.13 * scale, 0.22 * scale, 7, Color(0.30, 0.45, 0.21))
+    highlight.position = center + Vector3(-0.05 * scale, 0.67 * scale, -0.02)
+    tile.add_child(highlight)
+
+func _add_rock(tile: StaticBody3D, pos: Vector3, size: float) -> void:
+    var rock := _make_cylinder(size, size * 0.65, 6, Color(0.39, 0.38, 0.34))
+    rock.position = pos
+    rock.rotation_degrees = Vector3(8, 18, -5)
+    tile.add_child(rock)
 
 func _build_commander() -> void:
     commander = Node3D.new()
