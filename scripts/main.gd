@@ -74,8 +74,37 @@ func _build_ravenwood() -> void:
             tile.add_child(collision)
 
             _add_terrain_visuals(tile, coord)
+            _add_elevation_cliffs(tile, coord)
             add_child(tile)
             hex_nodes[coord] = tile
+
+func _add_elevation_cliffs(tile: StaticBody3D, coord: Vector2i) -> void:
+    var current := _elevation(coord)
+    var directions := [
+        Vector3(0.0, 0.0, -0.82),
+        Vector3(0.71, 0.0, -0.41),
+        Vector3(0.71, 0.0, 0.41),
+        Vector3(0.0, 0.0, 0.82),
+        Vector3(-0.71, 0.0, 0.41),
+        Vector3(-0.71, 0.0, -0.41)
+    ]
+    for i in range(6):
+        var neighbor := grid.neighbors(coord)
+        if i >= neighbor.size():
+            continue
+        var other := neighbor[i]
+        var drop := current - _elevation(other)
+        if drop < 0.32:
+            continue
+        var wall_height := min(drop * 0.72, 0.72)
+        var cliff := _make_box(Vector3(0.82, wall_height, 0.11), Color(0.25, 0.20, 0.15))
+        cliff.position = directions[i] + Vector3(0.0, -wall_height * 0.50, 0.0)
+        cliff.rotation_degrees.y = float(i) * 60.0
+        tile.add_child(cliff)
+        var lip := _make_box(Vector3(0.84, 0.055, 0.14), Color(0.30, 0.38, 0.20))
+        lip.position = directions[i] + Vector3(0.0, 0.025, 0.0)
+        lip.rotation_degrees.y = float(i) * 60.0
+        tile.add_child(lip)
 
 func _add_terrain_visuals(tile: StaticBody3D, coord: Vector2i) -> void:
     var terrain := _terrain_type(coord)
