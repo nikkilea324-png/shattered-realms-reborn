@@ -110,7 +110,7 @@ func _add_terrain_visuals(tile: StaticBody3D, coord: Vector2i) -> void:
     var terrain := _terrain_type(coord)
     match terrain:
         TerrainState.TerrainType.FOREST:
-            pass
+            _add_forest_scenelet(tile, coord)
         TerrainState.TerrainType.MOUNTAIN:
             var base := _make_cylinder(0.72, 0.34, 7, Color(0.25, 0.24, 0.22))
             base.position.y = 0.18
@@ -162,6 +162,46 @@ func _add_terrain_visuals(tile: StaticBody3D, coord: Vector2i) -> void:
                 tile.add_child(grass)
             if (coord.x * 5 + coord.y * 3) % 7 == 0:
                 _add_rock(tile, Vector3(0.32, 0.10, -0.22), 0.10)
+
+func _add_forest_scenelet(tile: StaticBody3D, coord: Vector2i) -> void:
+    var seed := abs(coord.x * 9283 + coord.y * 6899)
+    var variant := seed % 4
+    _add_tree_cluster(tile, Vector3(-0.42, 0.24, -0.28), 1.05 + float(variant) * 0.06)
+    _add_tree_cluster(tile, Vector3(0.34, 0.23, 0.24), 0.82 + float(seed % 3) * 0.08)
+    if seed % 3 != 0:
+        _add_tree_cluster(tile, Vector3(0.00, 0.23, -0.42), 0.68)
+    if seed % 4 == 0:
+        _add_tree_cluster(tile, Vector3(-0.02, 0.22, 0.40), 0.56)
+    _add_forest_log(tile, Vector3(-0.30, 0.17, 0.42), 0.52, 24.0 + float(seed % 90))
+    if seed % 2 == 0:
+        _add_forest_bush(tile, Vector3(0.38, 0.16, -0.40), 0.42)
+    if seed % 5 == 0:
+        _add_forest_mushrooms(tile, Vector3(-0.05, 0.16, 0.05))
+
+func _add_forest_bush(tile: StaticBody3D, center: Vector3, scale: float) -> void:
+    for offset in [Vector3(-0.13, 0.05, 0), Vector3(0.10, 0.08, 0.04), Vector3(0.0, 0.11, -0.10)]:
+        var leaf := _make_cone(0.18 * scale, 0.28 * scale, 7, Color(0.10, 0.25, 0.12))
+        leaf.position = center + offset * scale
+        tile.add_child(leaf)
+
+func _add_forest_log(tile: StaticBody3D, center: Vector3, scale: float, rotation_y: float) -> void:
+    var log := _make_cylinder(0.065 * scale, 0.62 * scale, 7, Color(0.25, 0.14, 0.08))
+    log.position = center
+    log.rotation_degrees = Vector3(90, rotation_y, 0)
+    tile.add_child(log)
+    var end := _make_cylinder(0.052 * scale, 0.012 * scale, 7, Color(0.42, 0.28, 0.16))
+    end.position = center + Vector3(0.0, 0.0, 0.31 * scale)
+    end.rotation_degrees = Vector3(90, rotation_y, 0)
+    tile.add_child(end)
+
+func _add_forest_mushrooms(tile: StaticBody3D, center: Vector3) -> void:
+    for offset in [Vector3(-0.14, 0.0, 0.02), Vector3(0.10, 0.0, 0.08), Vector3(0.02, 0.0, -0.12)]:
+        var stem := _make_cylinder(0.025, 0.12, 6, Color(0.72, 0.58, 0.40))
+        stem.position = center + offset + Vector3(0, 0.06, 0)
+        tile.add_child(stem)
+        var cap := _make_cone(0.07, 0.055, 8, Color(0.48, 0.20, 0.13))
+        cap.position = center + offset + Vector3(0, 0.14, 0)
+        tile.add_child(cap)
 
 func _add_tree_cluster(tile: StaticBody3D, center: Vector3, scale: float) -> void:
     var trunk := _make_cylinder(0.075 * scale, 0.42 * scale, 6, Color(0.25, 0.15, 0.09))
