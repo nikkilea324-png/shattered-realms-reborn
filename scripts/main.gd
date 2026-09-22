@@ -38,6 +38,7 @@ var touch_start := Vector2.ZERO
 var touch_moved := false
 
 func _ready() -> void:
+    _configure_camera()
     _build_loading_screen()
     await get_tree().process_frame
     _load_ravenwood_data()
@@ -63,12 +64,24 @@ func _ready() -> void:
     army_state.add_unit("swordsmen", 24)
     army_state.add_unit("spearmen", 20)
     _refresh_hud()
-    _set_loading(1.0, "Ravenwood ready", "Tap a hex • drag to pan • pinch to zoom")
+    _set_loading(1.0, "Ravenwood ready", "3D camera locked • Tap a hex • drag to pan • pinch to zoom")
     await get_tree().process_frame
     await get_tree().create_timer(0.25).timeout
     loading_layer.queue_free()
     loading_layer = null
     print("Ravenwood gameplay slice initialized: %d hexes" % grid.hex_count())
+
+func _configure_camera() -> void:
+    var camera := get_node_or_null("CameraRig/Camera3D") as Camera3D
+    if camera == null:
+        push_error("Ravenwood camera missing.")
+        return
+    camera.position = Vector3(0, 30, 30)
+    camera.near = 0.1
+    camera.far = 200.0
+    camera.current = true
+    camera.look_at(Vector3.ZERO, Vector3.UP)
+    print("RAVENWOOD CAMERA: pos=", camera.global_position, " target=", Vector3.ZERO, " rotation=", camera.global_rotation_degrees)
 
 func _load_ravenwood_data() -> void:
     const DATA_PATH := "res://data/ravenwood.json"
