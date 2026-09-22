@@ -249,9 +249,33 @@ func _build_commander() -> void:
     add_child(commander)
 
 func _build_locations() -> void:
-    _build_keep(Vector2i(5, 8))
-    _build_village(Vector2i(12, 10))
-    _build_mine(Vector2i(18, 5))
+    var locations: Array = ravenwood_data.get("starting_locations", [])
+    if locations.is_empty():
+        _build_keep(Vector2i(5, 8))
+        _build_village(Vector2i(12, 10))
+        _build_mine(Vector2i(18, 5))
+    else:
+        for location in locations:
+            var coord := _array_to_coord(location.get("hex", [0, 0]))
+            match String(location.get("type", "")):
+                "fort":
+                    _build_keep(coord)
+                "village":
+                    _build_village(coord)
+                "mine":
+                    _build_mine(coord)
+
+    for location in ravenwood_data.get("hidden_locations", []):
+        if bool(location.get("hidden", false)):
+            _build_hidden_location(_array_to_coord(location.get("hex", [0, 0])), String(location.get("id", "Hidden Location")))
+
+func _build_hidden_location(coord: Vector2i, location_id: String) -> void:
+    var root := Node3D.new()
+    root.name = location_id
+    root.position = grid.to_world(coord, HEX_SIZE) - _board_center()
+    root.position.y = _elevation(coord) + 0.12
+    root.visible = false
+    add_child(root)
 
 func _build_keep(coord: Vector2i) -> void:
     var root := Node3D.new()
