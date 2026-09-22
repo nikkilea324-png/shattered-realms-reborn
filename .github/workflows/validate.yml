@@ -60,16 +60,6 @@ jobs:
             keytool -genkeypair -v               -keystore "$HOME/.android/debug.keystore"               -storepass android               -alias androiddebugkey               -keypass android               -keyalg RSA               -keysize 2048               -validity 10000               -dname "CN=Android Debug,O=Android,C=US"
           fi
 
-      - name: Install Ravenwood forest asset packet
-        shell: bash
-        run: |
-          set -eux
-          rm -rf assets/ravenwood_forest
-          mkdir -p assets/ravenwood_forest
-          unzip -q assets/forest_3d_download_packet.zip -d /tmp/forest_packet
-          cp /tmp/forest_packet/assets/*.obj /tmp/forest_packet/assets/*.mtl assets/ravenwood_forest/
-          ls -lh assets/ravenwood_forest
-
       - name: Import project
         run: godot --headless --editor --quit --path .
 
