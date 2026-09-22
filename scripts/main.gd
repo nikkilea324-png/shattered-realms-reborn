@@ -28,6 +28,14 @@ var terrain_label: Label
 var loading_layer: CanvasLayer
 var loading_bar: ProgressBar
 var loading_status: Label
+var loading_detail: Label
+var ravenwood_data: Dictionary = {}
+var shared_base_mesh: CylinderMesh
+var shared_base_collision: CylinderShape3D
+var shared_terrain_materials: Dictionary = {}
+var touch_active := false
+var touch_start := Vector2.ZERO
+var touch_moved := false
 
 func _ready() -> void:
     _build_loading_screen()
