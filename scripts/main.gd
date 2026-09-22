@@ -206,6 +206,54 @@ func _add_forest_marker(tile: StaticBody3D, coord: Vector2i) -> void:
         tree.position = Vector3(0, 0.52, 0)
         tile.add_child(tree)
 
+func _build_loading_screen() -> void:
+    loading_layer = CanvasLayer.new()
+    loading_layer.layer = 100
+    loading_layer.name = "RavenwoodLoading"
+    add_child(loading_layer)
+
+    var background := ColorRect.new()
+    background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    background.color = Color(0.025, 0.055, 0.065, 1.0)
+    loading_layer.add_child(background)
+
+    var title := Label.new()
+    title.position = Vector2(80, 150)
+    title.size = Vector2(1120, 70)
+    title.text = "SHATTERED REALMS"
+    title.add_theme_font_size_override("font_size", 48)
+    title.add_theme_color_override("font_color", Color(0.95, 0.90, 0.65))
+    loading_layer.add_child(title)
+
+    loading_status = Label.new()
+    loading_status.position = Vector2(82, 260)
+    loading_status.size = Vector2(1116, 55)
+    loading_status.add_theme_font_size_override("font_size", 28)
+    loading_layer.add_child(loading_status)
+
+    loading_detail = Label.new()
+    loading_detail.position = Vector2(82, 322)
+    loading_detail.size = Vector2(1116, 60)
+    loading_detail.add_theme_font_size_override("font_size", 20)
+    loading_detail.add_theme_color_override("font_color", Color(0.70, 0.85, 0.90))
+    loading_layer.add_child(loading_detail)
+
+    loading_bar = ProgressBar.new()
+    loading_bar.position = Vector2(82, 430)
+    loading_bar.size = Vector2(1116, 40)
+    loading_bar.min_value = 0.0
+    loading_bar.max_value = 1.0
+    loading_bar.show_percentage = false
+    loading_layer.add_child(loading_bar)
+
+func _set_loading(progress: float, status: String, detail: String = "") -> void:
+    if loading_bar != null:
+        loading_bar.value = clamp(progress, 0.0, 1.0)
+    if loading_status != null:
+        loading_status.text = status
+    if loading_detail != null:
+        loading_detail.text = detail
+
 func _build_commander() -> void:
     commander = Node3D.new()
     commander.name = "Commander_Edrin_Vale"
