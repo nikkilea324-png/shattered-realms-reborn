@@ -147,8 +147,12 @@ func _build_ravenwood() -> void:
             var world := grid.to_world(coord, HEX_SIZE) - center
             var transform := Transform3D(Basis.IDENTITY, Vector3(world.x, _elevation(coord), world.z))
             mm.set_instance_transform(i, transform)
+        # Explicit bounds keep runtime-generated MultiMeshes from being frustum-culled on Android.
+        mm.custom_aabb = AABB(Vector3(-22.0, -2.0, -22.0), Vector3(44.0, 6.0, 44.0))
         multi.multimesh = mm
         multi.material_override = materials[terrain_key]
+        multi.extra_cull_margin = 64.0
+        multi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
         add_child(multi)
 
     # A single simple collision volume is enough for touch-to-hex picking.
@@ -161,6 +165,18 @@ func _build_ravenwood() -> void:
     picker_shape.position.y = -0.10
     picker.add_child(picker_shape)
     add_child(picker)
+
+    # Deterministic 3D render probe: a normal MeshInstance3D isolates the Android 3D pipeline from MultiMesh culling.
+    var render_probe := MeshInstance3D.new()
+    render_probe.name = "Ravenwood3DRenderProbe"
+    var probe_mesh := BoxMesh.new()
+    probe_mesh.size = Vector3(18.0, 0.24, 12.0)
+    render_probe.mesh = probe_mesh
+    render_probe.position = Vector3(0.0, 0.05, 0.0)
+    render_probe.material_override = _material(Color(0.10, 0.72, 0.16), 0.0)
+    render_probe.extra_cull_margin = 64.0
+    render_probe.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    add_child(render_probe)
 
     # Keep the detailed terrain decorations off the Android startup path.
     # They will be reintroduced through instancing after the base render is proven.
