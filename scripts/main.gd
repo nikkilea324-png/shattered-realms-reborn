@@ -116,42 +116,54 @@ func _prepare_shared_resources() -> void:
     shared_base_collision.radius = HEX_SIZE
     shared_base_collision.height = HEX_HEIGHT
 func _build_ravenwood() -> void:
+    # Android-safe terrain path: one MultiMesh per terrain family instead of
+    # hundreds of independent MeshInstance3D/StaticBody3D nodes.
     var center := _board_center()
-    var ground := MeshInstance3D.new()
-    ground.name = "Continuous_Terrain_Base"
-    var ground_mesh := BoxMesh.new()
-    ground_mesh.size = Vector3(40.0, 0.35, 30.0)
-    ground.mesh = ground_mesh
-    ground.position = Vector3(0, -0.30, 0)
-    ground.material_override = _material(Color(0.20, 0.28, 0.18), 0.0)
-    add_child(ground)
-
+    var groups: Dictionary = {}
+    var materials: Dictionary = {}
     for y in range(BOARD_HEIGHT):
         for x in range(BOARD_WIDTH):
             var coord := Vector2i(x, y)
-            var tile := StaticBody3D.new()
-            tile.name = "Hex_%d_%d" % [x, y]
-            tile.position = grid.to_world(coord, HEX_SIZE) - center
-            tile.position.y = _elevation(coord)
-
-            var mesh_instance := MeshInstance3D.new()
-            mesh_instance.mesh = shared_base_mesh
-            mesh_instance.rotation_degrees = Vector3(0, 30, 0)
-            mesh_instance.material_override = _terrain_material(coord)
-            tile.add_child(mesh_instance)
-
-            var collision := CollisionShape3D.new()
-            collision.shape = shared_base_collision
-            collision.position.y = -HEX_HEIGHT * 0.5
-            tile.add_child(collision)
-
-            _add_terrain_visuals(tile, coord)
-            add_child(tile)
-            hex_nodes[coord] = tile
-
+            var terrain_key := _terrain_name(_terrain_type(coord)).to_lower()
+            if not groups.has(terrain_key):
+                groups[terrain_key] = []
+                materials[terrain_key] = _terrain_material(coord)
+            groups[terrain_key].append(coord)
         if y % 2 == 0:
             _set_loading(0.10 + 0.45 * float(y + 1) / float(BOARD_HEIGHT), "Building Ravenwood terrain...", "Row %d / %d" % [y + 1, BOARD_HEIGHT])
             await get_tree().process_frame
+
+    for terrain_key in groups.keys():
+        var coords: Array = groups[terrain_key]
+        var multi := MultiMeshInstance3D.new()
+        multi.name = "Terrain_%s" % terrain_key.capitalize()
+        var mm := MultiMesh.new()
+        mm.transform_format = MultiMesh.TRANSFORM_3D
+        mm.use_colors = false
+        mm.instance_count = coords.size()
+        mm.mesh = shared_base_mesh
+        for i in range(coords.size()):
+            var coord: Vector2i = coords[i]
+            var world := grid.to_world(coord, HEX_SIZE) - center
+            var transform := Transform3D(Basis.IDENTITY, Vector3(world.x, _elevation(coord), world.z))
+            mm.set_instance_transform(i, transform)
+        multi.multimesh = mm
+        multi.material_override = materials[terrain_key]
+        add_child(multi)
+
+    # A single simple collision volume is enough for touch-to-hex picking.
+    var picker := StaticBody3D.new()
+    picker.name = "RavenwoodPickSurface"
+    var picker_shape := CollisionShape3D.new()
+    var picker_box := BoxShape3D.new()
+    picker_box.size = Vector3(40.0, 0.25, 30.0)
+    picker_shape.shape = picker_box
+    picker_shape.position.y = -0.10
+    picker.add_child(picker_shape)
+    add_child(picker)
+
+    # Keep the detailed terrain decorations off the Android startup path.
+    # They will be reintroduced through instancing after the base render is proven.
 func _add_terrain_visuals(tile: StaticBody3D, coord: Vector2i) -> void:
     var terrain := _terrain_type(coord)
     match terrain:
@@ -583,28 +595,34 @@ func _select_from_screen(screen_position: Vector2) -> void:
     var camera := get_viewport().get_camera_3d()
     if camera == null:
         return
-
     var origin := camera.project_ray_origin(screen_position)
     var direction := camera.project_ray_normal(screen_position)
-    var query := PhysicsRayQueryParameters3D.create(origin, origin + direction * 200.0)
-    query.collision_mask = 1
-    var hit := get_world_3d().direct_space_state.intersect_ray(query)
-    if hit.is_empty():
+    if abs(direction.y) < 0.0001:
         return
-
-    var body := hit.get("collider") as StaticBody3D
-    if body == null:
+    var world_y := 0.55
+    var distance := (world_y - origin.y) / direction.y
+    if distance <= 0.0:
         return
-
-    var parts := body.name.split("_")
-    if parts.size() != 3:
+    var hit := origin + direction * distance
+    var board_point := hit + _board_center()
+    var approx_x := int(round(board_point.x / (HEX_SIZE * 1.5)))
+    var approx_y := int(round(board_point.z / (HEX_SIZE * sqrt(3.0)) - (0.5 if (approx_x & 1) else 0.0)))
+    var best := Vector2i(-1, -1)
+    var best_dist := INF
+    for x in range(max(0, approx_x - 1), min(BOARD_WIDTH, approx_x + 2)):
+        for y in range(max(0, approx_y - 1), min(BOARD_HEIGHT, approx_y + 2)):
+            var coord := Vector2i(x, y)
+            var center := grid.to_world(coord, HEX_SIZE) - _board_center()
+            var d := Vector2(center.x - hit.x, center.z - hit.z).length_squared()
+            if d < best_dist:
+                best_dist = d
+                best = coord
+    if not grid.is_valid(best):
         return
-
-    var coord := Vector2i(int(parts[1]), int(parts[2]))
-    if commander_selected and reachable_hexes.has(coord):
-        _move_commander(coord, int(reachable_hexes[coord]))
+    if commander_selected and reachable_hexes.has(best):
+        _move_commander(best, int(reachable_hexes[best]))
     else:
-        select_hex(coord)
+        select_hex(best)
 
 func select_hex(coord: Vector2i) -> void:
     if not grid.is_valid(coord):
