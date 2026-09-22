@@ -25,13 +25,28 @@ var movement_label: Label
 var turn_label: Label
 var army_label: Label
 var terrain_label: Label
+var loading_layer: CanvasLayer
+var loading_bar: ProgressBar
+var loading_status: Label
 
 func _ready() -> void:
+    _build_loading_screen()
+    await get_tree().process_frame
     grid.configure(BOARD_WIDTH, BOARD_HEIGHT)
+    _set_loading(0.12, "Initializing Ravenwood terrain...")
+    await get_tree().process_frame
     _build_ravenwood()
+    _set_loading(0.52, "Building terrain and elevation...")
+    await get_tree().process_frame
     _build_commander()
+    _set_loading(0.66, "Placing commander and army...")
+    await get_tree().process_frame
     _build_locations()
+    _set_loading(0.78, "Placing Ravenwood locations...")
+    await get_tree().process_frame
     _build_selection()
+    _set_loading(0.88, "Preparing command interface...")
+    await get_tree().process_frame
     _build_hud()
     game_state.initialize_hero("edrin_vale", "Edrin Vale", commander_hex, 3)
     army_state.configure("ravenwood_rangers", "Ravenwood Rangers", commander_hex, "edrin_vale")
