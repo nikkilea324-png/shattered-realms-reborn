@@ -608,7 +608,7 @@ func _select_from_screen(screen_position: Vector2) -> void:
     var approx_x := int(round(board_point.x / (HEX_SIZE * 1.5)))
     var approx_y := int(round(board_point.z / (HEX_SIZE * sqrt(3.0)) - (0.5 if (approx_x & 1) else 0.0)))
     var best := Vector2i(-1, -1)
-    var best_dist := INF
+    var best_dist := 999999.0
     for x in range(max(0, approx_x - 1), min(BOARD_WIDTH, approx_x + 2)):
         for y in range(max(0, approx_y - 1), min(BOARD_HEIGHT, approx_y + 2)):
             var coord := Vector2i(x, y)
@@ -719,4 +719,5 @@ func _material(color: Color, metallic: float) -> StandardMaterial3D:
     material.albedo_color = color
     material.metallic = metallic
     material.roughness = 0.55
+    material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
     return material
