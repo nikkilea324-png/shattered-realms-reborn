@@ -425,12 +425,15 @@ func _terrain_name(terrain: TerrainState.TerrainType) -> String:
     return "UNKNOWN"
 
 func _terrain_type(coord: Vector2i) -> TerrainState.TerrainType:
-    if coord == Vector2i(5, 8):
-        return TerrainState.TerrainType.FORT
-    if coord == Vector2i(12, 10):
-        return TerrainState.TerrainType.VILLAGE
-    if coord == Vector2i(18, 5):
-        return TerrainState.TerrainType.MINE
+    for location in ravenwood_data.get("starting_locations", []):
+        if _array_to_coord(location.get("hex", [-1, -1])) == coord:
+            match String(location.get("type", "")):
+                "fort": return TerrainState.TerrainType.FORT
+                "village": return TerrainState.TerrainType.VILLAGE
+                "mine": return TerrainState.TerrainType.MINE
+    for location in ravenwood_data.get("hidden_locations", []):
+        if _array_to_coord(location.get("hex", [-1, -1])) == coord:
+            return TerrainState.TerrainType.DUNGEON
     if _is_river(coord):
         return TerrainState.TerrainType.RIVER
     if _is_road(coord):
@@ -458,10 +461,12 @@ func _show_reachable() -> void:
         return
     var frontier: Array[Vector2i] = [game_state.hero.hex]
     var costs: Dictionary = {game_state.hero.hex: 0}
-    while not frontier.is_empty():
-        var current: Vector2i = frontier.pop_front()
-        var current_cost: int = costs[current]
-        for neighbor in grid.neighbors(current):
+    var head := 0
+    while head < frontier.size():
+        var current_coord: Vector2i = frontier[head]
+        head += 1
+        var current_cost: int = costs[current_coord]
+        for neighbor in grid.neighbors(current_coord):
             var next_cost := current_cost + _movement_cost(neighbor)
             if next_cost > budget:
                 continue
@@ -498,8 +503,18 @@ func _move_commander(destination: Vector2i, cost: int) -> void:
     _refresh_hud()
 
 func _unhandled_input(event: InputEvent) -> void:
-    if event is InputEventScreenTouch and event.pressed:
-        _select_from_screen(event.position)
+    if event is InputEventScreenTouch:
+        if event.pressed:
+            touch_active = true
+            touch_start = event.position
+            touch_moved = false
+        elif touch_active:
+            if event.position.distance_to(touch_start) < 14.0 and not touch_moved:
+                _select_from_screen(event.position)
+            touch_active = false
+    elif event is InputEventScreenDrag:
+        if touch_active and event.position.distance_to(touch_start) > 14.0:
+            touch_moved = true
     elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
         _select_from_screen(event.position)
 
