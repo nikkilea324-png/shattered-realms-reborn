@@ -29,6 +29,7 @@ var terrain_label: Label
 func _ready() -> void:
     grid.configure(BOARD_WIDTH, BOARD_HEIGHT)
     _build_ravenwood()
+    _build_forest_asset_pack()
     _build_commander()
     _build_locations()
     _build_selection()
@@ -109,10 +110,7 @@ func _add_terrain_visuals(tile: StaticBody3D, coord: Vector2i) -> void:
     var terrain := _terrain_type(coord)
     match terrain:
         TerrainState.TerrainType.FOREST:
-            _add_tree_cluster(tile, Vector3(-0.40, 0.28, -0.25), 1.18)
-            _add_tree_cluster(tile, Vector3(0.32, 0.25, 0.22), 0.92)
-            if (coord.x * 7 + coord.y * 11) % 3 == 0:
-                _add_tree_cluster(tile, Vector3(0.02, 0.24, -0.38), 0.78)
+            pass
         TerrainState.TerrainType.MOUNTAIN:
             var base := _make_cylinder(0.72, 0.34, 7, Color(0.25, 0.24, 0.22))
             base.position.y = 0.18
@@ -182,6 +180,83 @@ func _add_rock(tile: StaticBody3D, pos: Vector3, size: float) -> void:
     rock.position = pos
     rock.rotation_degrees = Vector3(8, 18, -5)
     tile.add_child(rock)
+
+func _build_forest_asset_pack() -> void:
+    # First production-facing environment test: use the supplied low-poly forest packet
+    # as real geometry while keeping the hexes as the gameplay/rules layer underneath.
+    var root := Node3D.new()
+    root.name = "Ravenwood_Forest_AssetPack"
+    add_child(root)
+
+    var grove_center := grid.to_world(Vector2i(10, 9), HEX_SIZE) - _board_center()
+    var placements := [
+        ["tree_broadleaf_modular.obj", Vector3(-0.23, 0.02, 1.42), 341.0, 0.72],
+        ["tree_pine_modular.obj", Vector3(-1.35, 0.02, -1.07), 191.0, 0.72],
+        ["tree_pine_modular.obj", Vector3(-0.16, 0.02, 1.29), 235.0, 0.68],
+        ["tree_broadleaf_modular.obj", Vector3(1.72, 0.02, 0.91), 285.0, 0.72],
+        ["tree_pine_modular.obj", Vector3(-4.49, 0.02, 1.12), 225.0, 0.68],
+        ["tree_pine_modular.obj", Vector3(-1.19, 0.02, -1.44), 107.0, 0.70],
+        ["tree_broadleaf_modular.obj", Vector3(-3.97, 0.02, 2.87), 38.0, 0.72],
+        ["tree_pine_modular.obj", Vector3(0.12, 0.02, 2.87), 348.0, 0.68],
+        ["tree_pine_modular.obj", Vector3(-0.86, 0.02, 3.08), 9.0, 0.70],
+        ["tree_broadleaf_modular.obj", Vector3(3.77, 0.02, 2.88), 338.0, 0.72],
+        ["tree_pine_modular.obj", Vector3(0.08, 0.02, -3.68), 216.0, 0.68],
+        ["tree_pine_modular.obj", Vector3(4.02, 0.02, -3.49), 216.0, 0.70],
+        ["tree_broadleaf_modular.obj", Vector3(4.24, 0.02, 0.36), 318.0, 0.72],
+        ["tree_pine_modular.obj", Vector3(0.52, 0.02, 4.29), 26.0, 0.68],
+        ["tree_broadleaf_modular.obj", Vector3(-0.90, 0.02, -0.73), 305.0, 0.72],
+        ["tree_pine_modular.obj", Vector3(-0.27, 0.02, 0.98), 277.0, 0.68],
+        ["tree_pine_modular.obj", Vector3(-4.23, 0.02, 2.04), 98.0, 0.68],
+        ["tree_broadleaf_modular.obj", Vector3(4.29, 0.02, 1.47), 182.0, 0.72],
+        ["tree_pine_modular.obj", Vector3(3.97, 0.02, 3.30), 197.0, 0.70],
+        ["tree_pine_modular.obj", Vector3(1.56, 0.02, -3.48), 120.0, 0.68],
+        ["tree_broadleaf_modular.obj", Vector3(-1.48, 0.02, -1.16), 293.0, 0.72],
+        ["tree_pine_modular.obj", Vector3(2.79, 0.02, 0.00), 14.0, 0.70],
+        ["tree_pine_modular.obj", Vector3(-1.07, 0.02, 3.23), 16.0, 0.68],
+        ["rock_lowpoly.obj", Vector3(0.17, 0.02, -2.50), 218.0, 0.62],
+        ["rock_lowpoly.obj", Vector3(-4.11, 0.02, -2.66), 310.0, 0.56],
+        ["rock_lowpoly.obj", Vector3(-3.58, 0.02, 0.45), 91.0, 0.54],
+        ["rock_lowpoly.obj", Vector3(-3.80, 0.02, -2.04), 221.0, 0.58],
+        ["rock_lowpoly.obj", Vector3(-2.01, 0.02, -1.40), 326.0, 0.50],
+        ["rock_lowpoly.obj", Vector3(2.03, 0.02, 0.13), 188.0, 0.50],
+        ["rock_lowpoly.obj", Vector3(-2.62, 0.02, -1.96), 243.0, 0.48],
+        ["rock_lowpoly.obj", Vector3(1.77, 0.02, 3.20), 122.0, 0.54],
+        ["rock_lowpoly.obj", Vector3(4.10, 0.02, -2.99), 281.0, 0.54],
+        ["rock_lowpoly.obj", Vector3(-1.22, 0.02, -2.80), 112.0, 0.48]
+    ]
+
+    for placement in placements:
+        var mesh_path := "res://assets/ravenwood_forest/" + String(placement[0])
+        var mesh := load(mesh_path) as Mesh
+        if mesh == null:
+            push_warning("Forest asset failed to load: " + mesh_path)
+            continue
+        var instance := MeshInstance3D.new()
+        instance.mesh = mesh
+        instance.position = grove_center + Vector3(placement[1])
+        instance.rotation_degrees.y = float(placement[2])
+        var uniform_scale := float(placement[3])
+        instance.scale = Vector3.ONE * uniform_scale
+        root.add_child(instance)
+
+    # Small foreground accents make the grove read as a place rather than a tree grid.
+    _add_forest_prop(root, "bush_lowpoly.obj", grove_center + Vector3(-2.8, 0.03, 3.7), 0.72, 24.0)
+    _add_forest_prop(root, "bush_lowpoly.obj", grove_center + Vector3(2.7, 0.03, -3.5), 0.62, 198.0)
+    _add_forest_prop(root, "stump.obj", grove_center + Vector3(-2.7, 0.03, 1.7), 0.62, 74.0)
+    _add_forest_prop(root, "stump.obj", grove_center + Vector3(2.9, 0.03, 2.2), 0.54, 251.0)
+    _add_forest_prop(root, "mushroom.obj", grove_center + Vector3(-1.8, 0.03, 2.5), 0.80, 0.0)
+    _add_forest_prop(root, "mushroom.obj", grove_center + Vector3(2.2, 0.03, -1.8), 0.70, 0.0)
+
+func _add_forest_prop(root: Node3D, asset_name: String, world_position: Vector3, scale_factor: float, rotation_y: float) -> void:
+    var mesh := load("res://assets/ravenwood_forest/" + asset_name) as Mesh
+    if mesh == null:
+        return
+    var instance := MeshInstance3D.new()
+    instance.mesh = mesh
+    instance.position = world_position
+    instance.rotation_degrees.y = rotation_y
+    instance.scale = Vector3.ONE * scale_factor
+    root.add_child(instance)
 
 func _build_commander() -> void:
     commander = Node3D.new()
