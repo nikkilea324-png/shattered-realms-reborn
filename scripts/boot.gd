@@ -22,4 +22,4 @@ func _process(delta: float) -> void:
         detail_label.text = "2D boot confirmed\\nLoading the optimized 3D territory next"
     if elapsed >= 0.80:
         set_process(false)
-        get_tree().change_scene_to_file("res://scenes/Main.tscn")
+        get_tree().change_scene_to_file("res://scenes/RenderDiagnostic.tscn")
