@@ -139,25 +139,6 @@ func _build_ravenwood() -> void:
         if y % 2 == 0:
             _set_loading(0.10 + 0.45 * float(y + 1) / float(BOARD_HEIGHT), "Building Ravenwood terrain...", "Row %d / %d" % [y + 1, BOARD_HEIGHT])
             await get_tree().process_frame
-func _add_elevation_cliffs(tile: StaticBody3D, coord: Vector2i) -> void:
-    var current := _elevation(coord)
-    for other in grid.neighbors(coord):
-        var drop := current - _elevation(other)
-        if drop < 0.32:
-            continue
-        var delta := grid.to_world(other, HEX_SIZE) - grid.to_world(coord, HEX_SIZE)
-        delta.y = 0.0
-        var edge := delta.normalized() * 0.82
-        var wall_height := min(drop * 0.72, 0.72)
-        var cliff := _make_box(Vector3(0.82, wall_height, 0.11), Color(0.25, 0.20, 0.15))
-        cliff.position = edge + Vector3(0.0, -wall_height * 0.50, 0.0)
-        cliff.rotation_degrees.y = rad_to_deg(atan2(delta.x, delta.z))
-        tile.add_child(cliff)
-        var lip := _make_box(Vector3(0.84, 0.055, 0.14), Color(0.30, 0.38, 0.20))
-        lip.position = edge + Vector3(0.0, 0.025, 0.0)
-        lip.rotation_degrees.y = rad_to_deg(atan2(delta.x, delta.z))
-        tile.add_child(lip)
-
 func _add_terrain_visuals(tile: StaticBody3D, coord: Vector2i) -> void:
     var terrain := _terrain_type(coord)
     match terrain:
