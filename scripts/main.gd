@@ -104,6 +104,7 @@ func _build_ravenwood() -> void:
     ground.position = center + Vector3(0, -0.30, 0)
     ground.material_override = _material(Color(0.20, 0.28, 0.18), 0.0)
     add_child(ground)
+
     for y in range(BOARD_HEIGHT):
         for x in range(BOARD_WIDTH):
             var coord := Vector2i(x, y)
@@ -113,31 +114,23 @@ func _build_ravenwood() -> void:
             tile.position.y = _elevation(coord)
 
             var mesh_instance := MeshInstance3D.new()
-            var mesh := CylinderMesh.new()
-            mesh.top_radius = HEX_SIZE
-            mesh.bottom_radius = HEX_SIZE
-            mesh.height = HEX_HEIGHT + _elevation(coord) * 0.22
-            mesh.radial_segments = 6
-            mesh.rings = 1
-            mesh_instance.mesh = mesh
+            mesh_instance.mesh = shared_base_mesh
             mesh_instance.rotation_degrees = Vector3(0, 30, 0)
-            mesh_instance.position.y = -(HEX_HEIGHT + _elevation(coord) * 0.22) * 0.5
             mesh_instance.material_override = _terrain_material(coord)
             tile.add_child(mesh_instance)
 
             var collision := CollisionShape3D.new()
-            var shape := CylinderShape3D.new()
-            shape.radius = HEX_SIZE
-            shape.height = HEX_HEIGHT
-            collision.shape = shape
+            collision.shape = shared_base_collision
             collision.position.y = -HEX_HEIGHT * 0.5
             tile.add_child(collision)
 
             _add_terrain_visuals(tile, coord)
-            _add_elevation_cliffs(tile, coord)
             add_child(tile)
             hex_nodes[coord] = tile
 
+        if y % 2 == 0:
+            _set_loading(0.10 + 0.45 * float(y + 1) / float(BOARD_HEIGHT), "Building Ravenwood terrain...", "Row %d / %d" % [y + 1, BOARD_HEIGHT])
+            await get_tree().process_frame
 func _add_elevation_cliffs(tile: StaticBody3D, coord: Vector2i) -> void:
     var current := _elevation(coord)
     for other in grid.neighbors(coord):
