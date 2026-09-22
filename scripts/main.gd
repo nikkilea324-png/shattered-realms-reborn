@@ -32,21 +32,21 @@ var loading_status: Label
 func _ready() -> void:
     _build_loading_screen()
     await get_tree().process_frame
+    _load_ravenwood_data()
     grid.configure(BOARD_WIDTH, BOARD_HEIGHT)
-    _set_loading(0.12, "Initializing Ravenwood terrain...")
+    _prepare_shared_resources()
+    _set_loading(0.10, "Initializing Ravenwood terrain...", "384 hexes")
     await get_tree().process_frame
-    _build_ravenwood()
-    _set_loading(0.52, "Building terrain and elevation...")
+    await _build_ravenwood()
+    _set_loading(0.58, "Placing commander and army...", "Edrin Vale")
     await get_tree().process_frame
     _build_commander()
-    _set_loading(0.66, "Placing commander and army...")
+    _set_loading(0.70, "Placing Ravenwood locations...", "Keep • Village • Mine • Hidden Cave")
     await get_tree().process_frame
     _build_locations()
-    _set_loading(0.78, "Placing Ravenwood locations...")
+    _set_loading(0.82, "Preparing command interface...", "Touch controls online")
     await get_tree().process_frame
     _build_selection()
-    _set_loading(0.88, "Preparing command interface...")
-    await get_tree().process_frame
     _build_hud()
     game_state.initialize_hero("edrin_vale", "Edrin Vale", commander_hex, 3)
     army_state.configure("ravenwood_rangers", "Ravenwood Rangers", commander_hex, "edrin_vale")
@@ -55,8 +55,45 @@ func _ready() -> void:
     army_state.add_unit("swordsmen", 24)
     army_state.add_unit("spearmen", 20)
     _refresh_hud()
+    _set_loading(1.0, "Ravenwood ready", "Tap a hex • drag to pan • pinch to zoom")
+    await get_tree().process_frame
+    await get_tree().create_timer(0.25).timeout
+    loading_layer.queue_free()
+    loading_layer = null
     print("Ravenwood gameplay slice initialized: %d hexes" % grid.hex_count())
 
+func _load_ravenwood_data() -> void:
+    const DATA_PATH := "res://data/ravenwood.json"
+    if not FileAccess.file_exists(DATA_PATH):
+        push_warning("Ravenwood JSON missing; using embedded runtime defaults.")
+        return
+    var file := FileAccess.open(DATA_PATH, FileAccess.READ)
+    if file == null:
+        push_warning("Ravenwood JSON could not be opened; using embedded runtime defaults.")
+        return
+    var parsed = JSON.parse_string(file.get_as_text())
+    file.close()
+    if parsed is Dictionary:
+        ravenwood_data = parsed
+        for location in ravenwood_data.get("starting_locations", []):
+            if String(location.get("type", "")) == "fort":
+                commander_hex = _array_to_coord(location.get("hex", [5, 8]))
+                break
+
+func _array_to_coord(value: Variant) -> Vector2i:
+    if value is Array and value.size() >= 2:
+        return Vector2i(int(value[0]), int(value[1]))
+    return Vector2i(5, 8)
+
+func _prepare_shared_resources() -> void:
+    shared_base_mesh = CylinderMesh.new()
+    shared_base_mesh.top_radius = HEX_SIZE
+    shared_base_mesh.bottom_radius = HEX_SIZE
+    shared_base_mesh.height = HEX_HEIGHT
+    shared_base_mesh.radial_segments = 6
+    shared_base_collision = CylinderShape3D.new()
+    shared_base_collision.radius = HEX_SIZE
+    shared_base_collision.height = HEX_HEIGHT
 func _build_ravenwood() -> void:
     var center := _board_center()
     var ground := MeshInstance3D.new()
