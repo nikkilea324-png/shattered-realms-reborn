@@ -29,7 +29,6 @@ var terrain_label: Label
 func _ready() -> void:
     grid.configure(BOARD_WIDTH, BOARD_HEIGHT)
     _build_ravenwood()
-    _build_forest_asset_pack()
     _build_commander()
     _build_locations()
     _build_selection()
@@ -110,7 +109,7 @@ func _add_terrain_visuals(tile: StaticBody3D, coord: Vector2i) -> void:
     var terrain := _terrain_type(coord)
     match terrain:
         TerrainState.TerrainType.FOREST:
-            _add_forest_scenelet(tile, coord)
+            _add_forest_marker(tile, coord)
         TerrainState.TerrainType.MOUNTAIN:
             var base := _make_cylinder(0.72, 0.34, 7, Color(0.25, 0.24, 0.22))
             base.position.y = 0.18
@@ -162,6 +161,16 @@ func _add_terrain_visuals(tile: StaticBody3D, coord: Vector2i) -> void:
                 tile.add_child(grass)
             if (coord.x * 5 + coord.y * 3) % 7 == 0:
                 _add_rock(tile, Vector3(0.32, 0.10, -0.22), 0.10)
+
+func _add_forest_marker(tile: StaticBody3D, coord: Vector2i) -> void:
+    # Lightweight fallback: keep Android startup reliable while preserving forest readability.
+    var base := _make_cylinder(0.62, 0.10, 8, Color(0.12, 0.24, 0.12))
+    base.position.y = 0.18
+    tile.add_child(base)
+    if (coord.x * 7 + coord.y * 11) % 3 == 0:
+        var tree := _make_cone(0.24, 0.58, 7, Color(0.18, 0.34, 0.16))
+        tree.position = Vector3(0, 0.52, 0)
+        tile.add_child(tree)
 
 func _add_forest_scenelet(tile: StaticBody3D, coord: Vector2i) -> void:
     var seed := abs(coord.x * 9283 + coord.y * 6899)
