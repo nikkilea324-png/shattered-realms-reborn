@@ -1,0 +1,49 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource path="res://scripts/render_diagnostic.gd" type="Script" id="1_diag"]
+
+[sub_resource type="Environment" id="Environment_diag"]
+background_mode = 1
+background_color = Color(0.02, 0.025, 0.03, 1)
+ambient_light_source = 3
+ambient_light_color = Color(0.8, 0.8, 0.8, 1)
+ambient_light_energy = 1.0
+
+[sub_resource type="BoxMesh" id="Box_diag"]
+size = Vector3(10, 2, 10)
+
+[sub_resource type="StandardMaterial3D" id="Mat_diag"]
+shading_mode = 0
+albedo_color = Color(0.1, 0.85, 0.12, 1)
+
+[sub_resource type="PlaneMesh" id="Plane_diag"]
+size = Vector2(40, 30)
+
+[node name="RenderDiagnostic" type="Node3D"]
+script = ExtResource("1_diag")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_diag")
+
+[node name="Light" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-45, -30, 0)
+light_energy = 1.5
+
+[node name="Camera3D" type="Camera3D" parent="."]
+position = Vector3(0, 28, 28)
+rotation_degrees = Vector3(-45, 0, 0)
+current = true
+projection = 1
+size = 42.0
+near = 0.1
+far = 200.0
+
+[node name="GreenCube" type="MeshInstance3D" parent="."]
+mesh = SubResource("Box_diag")
+material_override = SubResource("Mat_diag")
+position = Vector3(0, 0, 0)
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+mesh = SubResource("Plane_diag")
+material_override = SubResource("Mat_diag")
+position = Vector3(0, -1.1, 0)
