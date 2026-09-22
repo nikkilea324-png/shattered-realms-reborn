@@ -577,34 +577,32 @@ func _elevation(coord: Vector2i) -> float:
     return clamp(value, 0.0, 1.7)
 
 func _terrain_material(coord: Vector2i) -> StandardMaterial3D:
-    var material := StandardMaterial3D.new()
-    var elevation := _elevation(coord)
-    var value := int((coord.x * 7 + coord.y * 13) % 9)
-
+    var key := "plains"
     if _is_river(coord):
-        material.albedo_color = Color(0.10, 0.34, 0.46)
-        material.roughness = 0.52
+        key = "river"
     elif _is_road(coord):
-        material.albedo_color = Color(0.32, 0.27, 0.19)
-        material.roughness = 0.98
+        key = "road"
     elif coord.x >= 17 and coord.y <= 6:
-        material.albedo_color = Color(0.30, 0.29, 0.27)
-        material.roughness = 0.96
+        key = "mountain"
     elif coord.x <= 7 and coord.y >= 10:
-        material.albedo_color = Color(0.20, 0.28, 0.19)
-        material.roughness = 0.92
+        key = "marsh"
     elif coord.x >= 9 and coord.x <= 12 and coord.y >= 5 and coord.y <= 13:
-        material.albedo_color = Color(0.13, 0.30, 0.17)
-        material.roughness = 0.9
-    elif elevation > 0.9:
-        material.albedo_color = Color(0.26, 0.27, 0.24)
-        material.roughness = 0.96
-    elif elevation > 0.45:
-        material.albedo_color = Color(0.27, 0.25, 0.19)
-        material.roughness = 0.94
-    else:
-        material.albedo_color = Color(0.28 + value * 0.007, 0.34 + value * 0.006, 0.20 + value * 0.004)
-        material.roughness = 0.88
+        key = "forest"
+    elif _elevation(coord) > 0.9:
+        key = "hills"
+    if shared_terrain_materials.has(key):
+        return shared_terrain_materials[key]
+    var colors := {
+        "plains": Color(0.28, 0.34, 0.20),
+        "forest": Color(0.13, 0.30, 0.17),
+        "hills": Color(0.27, 0.25, 0.19),
+        "mountain": Color(0.30, 0.29, 0.27),
+        "marsh": Color(0.20, 0.28, 0.19),
+        "river": Color(0.10, 0.34, 0.46),
+        "road": Color(0.32, 0.27, 0.19)
+    }
+    var material := _material(colors[key], 0.0)
+    shared_terrain_materials[key] = material
     return material
 
 func _make_cylinder(radius: float, height: float, segments: int, color: Color) -> MeshInstance3D:
