@@ -19,8 +19,7 @@ func _process(delta: float) -> void:
     if elapsed >= 0.25 and status_label != null:
         status_label.text = "ANDROID BOOT OK — STARTING RAVENWOOD"
     if elapsed >= 0.45 and detail_label != null:
-        detail_label.text = "2D boot confirmed
-Loading the optimized 3D territory next"
+        detail_label.text = "2D boot confirmed\\nLoading the optimized 3D territory next"
     if elapsed >= 0.80:
         set_process(false)
         get_tree().change_scene_to_file("res://scenes/Main.tscn")
