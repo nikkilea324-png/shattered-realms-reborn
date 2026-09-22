@@ -1,4 +1,6 @@
-[gd_scene format=3]
+[gd_scene load_steps=2 format=3]
+
+[ext_resource path="res://scripts/boot.gd" type="Script" id="1_boot"]
 
 [node name="Boot" type="Control"]
 layout_mode = 3
@@ -7,6 +9,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("1_boot")
 
 [node name="Background" type="ColorRect" parent="."]
 layout_mode = 1
@@ -15,7 +18,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.035, 0.09, 0.12, 1)
+color = Color(0.025, 0.055, 0.065, 1)
 
 [node name="Title" type="Label" parent="."]
 layout_mode = 0
@@ -35,7 +38,7 @@ offset_right = 1198.0
 offset_bottom = 320.0
 theme_override_colors/font_color = Color(0.95, 0.95, 0.95, 1)
 theme_override_font_sizes/font_size = 28
-text = "ANDROID BOOT TEST — GODOT REACHED THE GAME SCENE"
+text = "ANDROID BOOT OK — STARTING RAVENWOOD"
 
 [node name="Detail" type="Label" parent="."]
 layout_mode = 0
@@ -45,7 +48,8 @@ offset_right = 1198.0
 offset_bottom = 430.0
 theme_override_colors/font_color = Color(0.7, 0.85, 0.9, 1)
 theme_override_font_sizes/font_size = 22
-text = "BOOT OK\\n3D WORLD LOAD IS ISOLATED UNTIL THIS SCREEN IS CONFIRMED"
+text = "2D boot confirmed
+Loading the optimized 3D territory next"
 
 [node name="Progress" type="ProgressBar" parent="."]
 layout_mode = 0
@@ -53,5 +57,5 @@ offset_left = 82.0
 offset_top = 470.0
 offset_right = 1198.0
 offset_bottom = 510.0
-value = 25.0
+value = 0.0
 show_percentage = false
