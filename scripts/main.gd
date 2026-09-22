@@ -109,7 +109,7 @@ func _build_ravenwood() -> void:
     var ground_mesh := BoxMesh.new()
     ground_mesh.size = Vector3(40.0, 0.35, 30.0)
     ground.mesh = ground_mesh
-    ground.position = center + Vector3(0, -0.30, 0)
+    ground.position = Vector3(0, -0.30, 0)
     ground.material_override = _material(Color(0.20, 0.28, 0.18), 0.0)
     add_child(ground)
 
