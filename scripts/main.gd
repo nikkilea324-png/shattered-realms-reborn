@@ -116,46 +116,31 @@ func _prepare_shared_resources() -> void:
     shared_base_collision.radius = HEX_SIZE
     shared_base_collision.height = HEX_HEIGHT
 func _build_ravenwood() -> void:
-    # Android-safe terrain path: one MultiMesh per terrain family instead of
-    # hundreds of independent MeshInstance3D/StaticBody3D nodes.
+    # Stable Android baseline: individual MeshInstance3D hexes using shared
+    # mesh/material resources. This deliberately bypasses MultiMesh while we
+    # isolate the device renderer; the optimized instanced path comes later.
     var center := _board_center()
-    var groups: Dictionary = {}
-    var materials: Dictionary = {}
     for y in range(BOARD_HEIGHT):
         for x in range(BOARD_WIDTH):
             var coord := Vector2i(x, y)
-            var terrain_key := _terrain_name(_terrain_type(coord)).to_lower()
-            if not groups.has(terrain_key):
-                groups[terrain_key] = []
-                materials[terrain_key] = _terrain_material(coord)
-            groups[terrain_key].append(coord)
+            var tile := MeshInstance3D.new()
+            tile.name = "TerrainHex_%d_%d" % [x, y]
+            tile.mesh = shared_base_mesh
+            tile.material_override = _terrain_material(coord)
+            var world := grid.to_world(coord, HEX_SIZE) - center
+            tile.position = Vector3(world.x, _elevation(coord), world.z)
+            tile.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+            tile.extra_cull_margin = 4.0
+            add_child(tile)
         if y % 2 == 0:
-            _set_loading(0.10 + 0.45 * float(y + 1) / float(BOARD_HEIGHT), "Building Ravenwood terrain...", "Row %d / %d" % [y + 1, BOARD_HEIGHT])
+            _set_loading(
+                0.10 + 0.45 * float(y + 1) / float(BOARD_HEIGHT),
+                "Building Ravenwood terrain...",
+                "Row %d / %d" % [y + 1, BOARD_HEIGHT]
+            )
             await get_tree().process_frame
 
-    for terrain_key in groups.keys():
-        var coords: Array = groups[terrain_key]
-        var multi := MultiMeshInstance3D.new()
-        multi.name = "Terrain_%s" % terrain_key.capitalize()
-        var mm := MultiMesh.new()
-        mm.transform_format = MultiMesh.TRANSFORM_3D
-        mm.use_colors = false
-        mm.instance_count = coords.size()
-        mm.mesh = shared_base_mesh
-        for i in range(coords.size()):
-            var coord: Vector2i = coords[i]
-            var world := grid.to_world(coord, HEX_SIZE) - center
-            var transform := Transform3D(Basis.IDENTITY, Vector3(world.x, _elevation(coord), world.z))
-            mm.set_instance_transform(i, transform)
-        # Explicit bounds keep runtime-generated MultiMeshes from being frustum-culled on Android.
-        mm.custom_aabb = AABB(Vector3(-22.0, -2.0, -22.0), Vector3(44.0, 6.0, 44.0))
-        multi.multimesh = mm
-        multi.material_override = materials[terrain_key]
-        multi.extra_cull_margin = 64.0
-        multi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-        add_child(multi)
-
-    # A single simple collision volume is enough for touch-to-hex picking.
+    # One simple collision volume is enough for touch-to-hex picking.
     var picker := StaticBody3D.new()
     picker.name = "RavenwoodPickSurface"
     var picker_shape := CollisionShape3D.new()
@@ -166,20 +151,8 @@ func _build_ravenwood() -> void:
     picker.add_child(picker_shape)
     add_child(picker)
 
-    # Deterministic 3D render probe: a normal MeshInstance3D isolates the Android 3D pipeline from MultiMesh culling.
-    var render_probe := MeshInstance3D.new()
-    render_probe.name = "Ravenwood3DRenderProbe"
-    var probe_mesh := BoxMesh.new()
-    probe_mesh.size = Vector3(18.0, 0.24, 12.0)
-    render_probe.mesh = probe_mesh
-    render_probe.position = Vector3(0.0, 0.05, 0.0)
-    render_probe.material_override = _material(Color(0.10, 0.72, 0.16), 0.0)
-    render_probe.extra_cull_margin = 64.0
-    render_probe.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-    add_child(render_probe)
+    print("RAVENWOOD TERRAIN: %d MeshInstance3D hexes created" % (BOARD_WIDTH * BOARD_HEIGHT))
 
-    # Keep the detailed terrain decorations off the Android startup path.
-    # They will be reintroduced through instancing after the base render is proven.
 func _add_terrain_visuals(tile: StaticBody3D, coord: Vector2i) -> void:
     var terrain := _terrain_type(coord)
     match terrain:
